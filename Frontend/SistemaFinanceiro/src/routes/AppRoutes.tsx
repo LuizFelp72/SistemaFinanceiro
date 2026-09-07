@@ -5,6 +5,7 @@ import ProtectedRoute from "../auth/ProtectedRoute";
 
 const MainLayout = lazy(() => import("../layouts/MainLayout/index.tsx"));
 const Login = lazy(() => import("../views/Login"));
+const Transacoes = lazy(() => import("../views/Transacoes"));
 
 function Loading() {
   return (
@@ -28,7 +29,12 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<MainLayout />}></Route>
+          <Route path="/" element={<MainLayout />}>
+            {/* Página principal = Transações */}
+            <Route index element={<Transacoes />} />
+            {/* Também acessível em /transacoes (pro menu lateral) */}
+            <Route path="transacoes" element={<Transacoes />} />
+          </Route>
         </Route>
       </Routes>
     </Suspense>

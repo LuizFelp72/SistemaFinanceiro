@@ -11,15 +11,15 @@ function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  function handleLogin(data: { email: string; password: string }) {
-    const success = login(data.email, data.password);
+function handleLogin(data: { email: string; password: string }) {
+  const success = login(data.email, data.password);
 
-    if (success) {
-      navigate("/");
-    } else {
-      setError("E-mail ou senha inválidos");
-    }
+  if (success) {
+    navigate("/");
+  } else {
+    setError("E-mail ou senha inválidos");
   }
+}
 
   return (
     <Container>
