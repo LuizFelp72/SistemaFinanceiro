@@ -8,7 +8,7 @@ import {
 
 interface AuthContextData {
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
+  login: (usernameOrEmail: string, password: string) => boolean;
   logout: () => void;
 }
 
@@ -22,9 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) setIsAuthenticated(true);
   }, []);
 
-  function login(username: string, password: string): boolean {
+  function login(usernameOrEmail: string, password: string): boolean {
+    // Extrai a parte antes do @ (se tiver @) ou usa o valor direto
+    const usuario = usernameOrEmail.includes("@")
+      ? usernameOrEmail.split("@")[0]
+      : usernameOrEmail;
+
     // Validação fake, sem API — troque depois pela chamada real
-    if (username === "admin" && password === "123456") {
+    if (usuario === "admin" && password === "123456") {
       localStorage.setItem("token", "fake-token");
       setIsAuthenticated(true);
       return true;
