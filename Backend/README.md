@@ -8,6 +8,9 @@ controller, DTO, service e repository. Não há novas dependências de execuçã
 
 Requisitos: Node.js 18 ou superior e PostgreSQL 13 ou superior.
 
+Para iniciar o PostgreSQL local pelo Docker, execute `docker compose up -d --build --wait postgres`
+na raiz do repositório. A conexão padrão de `.env.example` já corresponde a esse banco.
+
 ```bash
 cd Backend
 npm ci
