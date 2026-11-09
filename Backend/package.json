@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "node scripts/migrate.js",
+    "test": "node --test test/validation.test.js",
+    "test:integration": "node --test test/entities.integration.test.js"
   },
   "keywords": [],
   "author": "",
