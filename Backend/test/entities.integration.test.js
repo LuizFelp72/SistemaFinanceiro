@@ -244,3 +244,59 @@ test("CRUD de bem (asset), filtros e isolamento por usuário", async () => {
   await request("DELETE", `/assets/${bem.id}`, undefined, 204);
   await request("GET", `/assets/${bem.id}`, undefined, 404);
 });
+
+test("CRUD de categoria, proteção contra troca de tipo vinculada e isolamento", async () => {
+  const cat = await request("POST", "/categories", {
+    nome: "Salário",
+    tipo: "receita",
+    cor: "#21A366",
+    icone: "wallet",
+  }, 201);
+  assert.equal(cat.nome, "Salário");
+  assert.equal(cat.tipo, "receita");
+
+  const atualizada = await request("PATCH", `/categories/${cat.id}`, { nome: "Salário Mensal" });
+  assert.equal(atualizada.nome, "Salário Mensal");
+
+  const lista = await request("GET", "/categories?tipo=receita&busca=Salário");
+  assert.equal(lista.total, 1);
+
+  const conta = await account();
+  const tx = await transaction(conta, { categoria_id: cat.id, tipo: "receita" });
+  await request("PATCH", `/categories/${cat.id}`, { tipo: "despesa" }, 409);
+  await request("DELETE", `/categories/${cat.id}`, undefined, 409);
+
+  await request("DELETE", `/transactions/${tx.id}`, undefined, 204);
+  await request("GET", `/categories/${cat.id}`, undefined, 404, otherId);
+  await request("DELETE", `/categories/${cat.id}`, undefined, 204);
+  await request("GET", `/categories/${cat.id}`, undefined, 404);
+});
+
+test("CRUD de meta financeira (goal), validação de datas e isolamento", async () => {
+  const meta = await request("POST", "/goals", {
+    nome: "Viagem de Férias",
+    valor_objetivo: "5000.00",
+    valor_atual: "1200.00",
+    data_inicio: "2026-01-10",
+    data_limite: "2026-12-10",
+  }, 201);
+  assert.equal(meta.nome, "Viagem de Férias");
+  assert.equal(meta.status, "ativa");
+  assert.equal(meta.valor_objetivo, "5000.00");
+  assert.equal(meta.valor_atual, "1200.00");
+
+  await request("PATCH", `/goals/${meta.id}`, { data_limite: "2025-12-31" }, 400);
+
+  const atualizada = await request("PATCH", `/goals/${meta.id}`, {
+    valor_atual: "5000.00",
+    status: "concluida",
+  });
+  assert.equal(atualizada.status, "concluida");
+
+  const lista = await request("GET", "/goals?status=concluida&busca=Viagem");
+  assert.equal(lista.total, 1);
+
+  await request("GET", `/goals/${meta.id}`, undefined, 404, otherId);
+  await request("DELETE", `/goals/${meta.id}`, undefined, 204);
+  await request("GET", `/goals/${meta.id}`, undefined, 404);
+});

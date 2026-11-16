@@ -3,6 +3,8 @@ const assert = require("node:assert/strict");
 const account = require("../src/modules/accounts/account.dto");
 const transaction = require("../src/modules/transactions/transaction.dto");
 const asset = require("../src/modules/assets/asset.dto");
+const category = require("../src/modules/categories/category.dto");
+const goal = require("../src/modules/goals/goal.dto");
 const v = require("../src/shared/validation");
 
 test("valores monetários mantêm precisão decimal, incluindo o limite de NUMERIC(15,2)", () => {
@@ -23,7 +25,7 @@ test("datas inválidas não são normalizadas silenciosamente", () => {
 });
 
 test("DTOs rejeitam alteração de proprietário, campos desconhecidos e PATCH vazio", () => {
-  for (const dto of [account, transaction, asset]) {
+  for (const dto of [account, transaction, asset, category, goal]) {
     for (const body of [{ usuario_id: "qualquer" }, { saldo_atual: 500 }, {}, [], null]) {
       assert.throws(() => dto.parse(body, true), { status: 400 });
     }
@@ -45,14 +47,46 @@ test("DTOs rejeitam alteração de proprietário, campos desconhecidos e PATCH v
     data_aquisicao: "2024-05-10",
     descricao: null,
   });
+  assert.deepEqual(category.parse({
+    nome: "  Alimentação  ",
+    tipo: "despesa",
+    cor: "#FF0000",
+  }), {
+    nome: "Alimentação",
+    tipo: "despesa",
+    cor: "#FF0000",
+    icone: null,
+  });
+  assert.deepEqual(goal.parse({
+    nome: "  Reserva de Emergência  ",
+    valor_objetivo: "15000.00",
+    data_inicio: "2026-01-01",
+    data_limite: "2026-12-31",
+  }), {
+    nome: "Reserva de Emergência",
+    valor_objetivo: "15000.00",
+    valor_atual: "0.00",
+    data_inicio: "2026-01-01",
+    data_limite: "2026-12-31",
+    status: "ativa",
+  });
   assert.throws(() => account.parse({ nome: "Conta", tipo: "corrente", ativo: "false" }), { status: 400 });
   assert.throws(() => transaction.parse({ valor: -10 }, true), { status: 400 });
   assert.throws(() => asset.parse({ valor_aquisicao: -1 }, true), { status: 400 });
+  assert.throws(() => category.parse({ nome: "Teste", tipo: "transferencia" }), { status: 400 });
+  assert.throws(() => goal.parse({
+    nome: "Meta inválida",
+    valor_objetivo: "1000.00",
+    data_inicio: "2026-12-31",
+    data_limite: "2026-01-01",
+  }), { status: 400 });
 });
 
 test("filtros e paginação possuem limites e formatos validados", () => {
   assert.deepEqual(account.filters({ ativo: "false", limit: "5" }), { page: 1, limit: 5, ativo: false });
   assert.deepEqual(asset.filters({ tipo: "Veículo", busca: "Civic" }), { page: 1, limit: 20, tipo: "Veículo", busca: "Civic" });
+  assert.deepEqual(category.filters({ tipo: "receita", busca: "Sal" }), { page: 1, limit: 20, tipo: "receita", busca: "Sal" });
+  assert.deepEqual(goal.filters({ status: "ativa", busca: "Reserva" }), { page: 1, limit: 20, status: "ativa", busca: "Reserva" });
   for (const query of [{ limit: "101" }, { page: "0" }, { limit: ["1", "2"] }, { extra: "x" }, { data_inicio: "2026-02-02", data_fim: "2026-01-01" }]) {
     assert.throws(() => transaction.filters(query), { status: 400 });
   }
