@@ -24,6 +24,12 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { listarTransacoes } from "../../services/transacoes/transacoes.service";
+import {
+  CORES_CATEGORIA,
+  capitalizar,
+  formatarData,
+  formatarMoeda,
+} from "../../utils/financeiro";
 
 const CORES = {
   primaria: "#6C5CE7",
@@ -33,18 +39,6 @@ const CORES = {
   laranja: "#F2994A",
   texto: "#667085",
   borda: "#EAECF0",
-};
-
-const CORES_CATEGORIA: Record<string, { bg: string; cor: string }> = {
-  Salário: { bg: "#E6F7EF", cor: "#21A366" },
-  Alimentação: { bg: "#FDEBEC", cor: "#E5535E" },
-  Trabalho: { bg: "#E8F1FE", cor: "#2F80ED" },
-  Compras: { bg: "#F0E9FD", cor: "#8B5CF6" },
-  Saúde: { bg: "#FDE8F3", cor: "#EC4899" },
-  Transporte: { bg: "#FEF3E2", cor: "#F2994A" },
-  Entretenimento: { bg: "#FDE8F3", cor: "#D6409F" },
-  Moradia: { bg: "#E8F1FE", cor: "#2F80ED" },
-  Outros: { bg: "#F1F2F4", cor: "#667085" },
 };
 
 const estiloCabecalho = {
@@ -58,17 +52,6 @@ const estiloCelula = {
   fontSize: 14,
   borderBottom: `1px solid ${CORES.borda}`,
 };
-
-const formatarMoeda = (valor: number) =>
-  valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-const formatarData = (data: string) => {
-  const [ano, mes, dia] = data.split("-");
-  return `${dia}/${mes}/${ano}`;
-};
-
-const capitalizar = (texto: string) =>
-  texto.charAt(0).toUpperCase() + texto.slice(1);
 
 function Transacoes() {
   const transacoes = useMemo(() => listarTransacoes(), []);
