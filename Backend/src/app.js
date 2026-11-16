@@ -17,6 +17,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/accounts", authenticate, require("./modules/accounts/account.routes"));
 app.use("/api/v1/transactions", authenticate, require("./modules/transactions/transaction.routes"));
+app.use("/api/v1/assets", authenticate, require("./modules/assets/asset.routes"));
 app.use((req, res) => res.status(404).json({ error: "Rota não encontrada." }));
 app.use(errorHandler);
 

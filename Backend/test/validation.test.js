@@ -2,6 +2,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const account = require("../src/modules/accounts/account.dto");
 const transaction = require("../src/modules/transactions/transaction.dto");
+const asset = require("../src/modules/assets/asset.dto");
 const v = require("../src/shared/validation");
 
 test("valores monetários mantêm precisão decimal, incluindo o limite de NUMERIC(15,2)", () => {
@@ -22,7 +23,7 @@ test("datas inválidas não são normalizadas silenciosamente", () => {
 });
 
 test("DTOs rejeitam alteração de proprietário, campos desconhecidos e PATCH vazio", () => {
-  for (const dto of [account, transaction]) {
+  for (const dto of [account, transaction, asset]) {
     for (const body of [{ usuario_id: "qualquer" }, { saldo_atual: 500 }, {}, [], null]) {
       assert.throws(() => dto.parse(body, true), { status: 400 });
     }
@@ -30,12 +31,28 @@ test("DTOs rejeitam alteração de proprietário, campos desconhecidos e PATCH v
   assert.deepEqual(account.parse({ nome: "  Carteira  ", tipo: "carteira" }), {
     nome: "Carteira", tipo: "carteira", saldo_inicial: "0.00", moeda: "BRL", ativo: true,
   });
+  assert.deepEqual(asset.parse({
+    nome: "  Apartamento  ",
+    tipo: "Imóvel",
+    valor_aquisicao: "350000.00",
+    valor_atual: "420000.50",
+    data_aquisicao: "2024-05-10",
+  }), {
+    nome: "Apartamento",
+    tipo: "Imóvel",
+    valor_aquisicao: "350000.00",
+    valor_atual: "420000.50",
+    data_aquisicao: "2024-05-10",
+    descricao: null,
+  });
   assert.throws(() => account.parse({ nome: "Conta", tipo: "corrente", ativo: "false" }), { status: 400 });
   assert.throws(() => transaction.parse({ valor: -10 }, true), { status: 400 });
+  assert.throws(() => asset.parse({ valor_aquisicao: -1 }, true), { status: 400 });
 });
 
 test("filtros e paginação possuem limites e formatos validados", () => {
   assert.deepEqual(account.filters({ ativo: "false", limit: "5" }), { page: 1, limit: 5, ativo: false });
+  assert.deepEqual(asset.filters({ tipo: "Veículo", busca: "Civic" }), { page: 1, limit: 20, tipo: "Veículo", busca: "Civic" });
   for (const query of [{ limit: "101" }, { page: "0" }, { limit: ["1", "2"] }, { extra: "x" }, { data_inicio: "2026-02-02", data_fim: "2026-01-01" }]) {
     assert.throws(() => transaction.filters(query), { status: 400 });
   }

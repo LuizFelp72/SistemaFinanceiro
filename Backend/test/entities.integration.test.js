@@ -218,3 +218,29 @@ test("requisições inválidas e erros retornam HTTP coerente", async () => {
   assert.equal(response.status, 400);
   assert.deepEqual(await response.json(), { error: "JSON inválido." });
 });
+
+test("CRUD de bem (asset), filtros e isolamento por usuário", async () => {
+  const bem = await request("POST", "/assets", {
+    nome: "Honda Civic",
+    tipo: "Veículo",
+    valor_aquisicao: "85000.00",
+    valor_atual: "80000.00",
+    data_aquisicao: "2024-03-15",
+    descricao: "Carro de uso pessoal",
+  }, 201);
+  assert.equal(bem.nome, "Honda Civic");
+  assert.equal(bem.valor_aquisicao, "85000.00");
+  assert.equal(bem.valor_atual, "80000.00");
+  assert.equal(bem.data_aquisicao, "2024-03-15");
+
+  const atualizado = await request("PATCH", `/assets/${bem.id}`, { valor_atual: "78500.00" });
+  assert.equal(atualizado.valor_atual, "78500.00");
+
+  const lista = await request("GET", "/assets?tipo=Veículo&busca=Civic");
+  assert.equal(lista.total, 1);
+  assert.equal(lista.data[0].id, bem.id);
+
+  await request("GET", `/assets/${bem.id}`, undefined, 404, otherId);
+  await request("DELETE", `/assets/${bem.id}`, undefined, 204);
+  await request("GET", `/assets/${bem.id}`, undefined, 404);
+});
