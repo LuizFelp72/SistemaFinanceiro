@@ -1,0 +1,58 @@
+import type { Bem } from "./bens.types";
+
+export const bensMock: Bem[] = [
+  {
+    id: "1",
+    nome: "Apartamento Centro",
+    tipo: "Imóvel",
+    valor_aquisicao: 350000.0,
+    valor_atual: 420000.0,
+    data_aquisicao: "2022-08-15",
+    descricao: "Apartamento de 2 quartos na região central",
+  },
+  {
+    id: "2",
+    nome: "Honda Civic Touring",
+    tipo: "Veículo",
+    valor_aquisicao: 135000.0,
+    valor_atual: 122000.0,
+    data_aquisicao: "2023-04-10",
+    descricao: "Carro de uso diário segurado",
+  },
+  {
+    id: "3",
+    nome: "Tesouro IPCA+ 2035",
+    tipo: "Investimento",
+    valor_aquisicao: 25000.0,
+    valor_atual: 28950.5,
+    data_aquisicao: "2024-01-20",
+    descricao: "Reserva de longo prazo atrelada à inflação",
+  },
+  {
+    id: "4",
+    nome: "MacBook Pro 14\"",
+    tipo: "Eletrônico",
+    valor_aquisicao: 14500.0,
+    valor_atual: 11000.0,
+    data_aquisicao: "2024-06-05",
+    descricao: "Equipamento de trabalho principal",
+  },
+  {
+    id: "5",
+    nome: "Terreno Condomínio Verde",
+    tipo: "Imóvel",
+    valor_aquisicao: 180000.0,
+    valor_atual: 215000.0,
+    data_aquisicao: "2023-11-12",
+    descricao: "Lote de 360m² quitado",
+  },
+  {
+    id: "6",
+    nome: "Cotas de Fundos Imobiliários (FIIs)",
+    tipo: "Investimento",
+    valor_aquisicao: 40000.0,
+    valor_atual: 43200.0,
+    data_aquisicao: "2024-03-01",
+    descricao: "Carteira diversificada de FIIs de tijolo e papel",
+  },
+];
