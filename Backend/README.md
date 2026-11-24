@@ -1,8 +1,10 @@
-# API de contas e transações
+# API do Sistema Financeiro
 
-Implementação modular em JavaScript/CommonJS, seguindo a base existente do projeto:
-Express 5 e PostgreSQL com `pg`. Cada módulo em `src/modules/` contém rotas,
-controller, DTO, service e repository. Não há novas dependências de execução.
+API REST em JavaScript/CommonJS com Express 5 e PostgreSQL (`pg`). Cada módulo em
+`src/modules/` tem `dto`, `service`, `repository` e `index.js` (que exporta `{ path, router }`).
+O CRUD padrão vem de `src/shared/` (`crud.js`, `dto.js`, `sql.js`); as rotas são montadas em
+`src/routes/index.js`. Para criar uma entidade nova, copie um módulo simples (ex.: `payment-methods`)
+e registre-o nessa lista.
 
 ## Executar
 
@@ -33,9 +35,7 @@ O token deve ser JWT HS256 assinado com `JWT_SECRET`, ter `sub` igual ao UUID de
 um registro existente em `users` e conter `exp` válido. A API verifica a
 assinatura, a expiração e a existência do usuário a cada requisição.
 
-Cadastro, login, emissão de tokens e CRUD de categorias/métodos de pagamento
-ficam para módulos próprios. Esta entrega fornece a verificação JWT para
-proteger contas e transações; o frontend continua usando seus mocks.
+Cadastro e login ficam em `/api/v1/auth` e emitem o token. O frontend ainda usa mocks.
 
 O `usuario_id` é sempre obtido do token. Enviá-lo no corpo é rejeitado.
 Referências a contas, categorias e métodos de outros usuários são rejeitadas,
@@ -48,6 +48,12 @@ outro usuário retornam 404.
 | --- | --- | --- |
 | Contas | `/api/v1/accounts` | `/api/v1/accounts/:id` |
 | Transações | `/api/v1/transactions` | `/api/v1/transactions/:id` |
+| Métodos de pagamento | `/api/v1/payment-methods` | `/api/v1/payment-methods/:id` |
+| Categorias | `/api/v1/categories` | `/api/v1/categories/:id` |
+| Bens | `/api/v1/assets` | `/api/v1/assets/:id` |
+| Metas financeiras | `/api/v1/goals` | `/api/v1/goals/:id` |
+
+Também: `GET /api/v1/health` (sem autenticação) e os endpoints de `/api/v1/auth` abaixo.
 
 Coleções aceitam GET e POST. Registros aceitam GET, PATCH e DELETE.
 POST retorna 201 e `Location`; DELETE retorna 204, sem corpo.

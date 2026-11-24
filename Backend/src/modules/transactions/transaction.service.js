@@ -1,11 +1,10 @@
 const repository = require("./transaction.repository");
 const inTransaction = require("../../shared/transaction");
 const { AppError } = require("../../shared/errors");
+const { createService, ensureFound } = require("../../shared/crud");
 
-function required(transaction) {
-  if (!transaction) throw new AppError(404, "Transação não encontrada.");
-  return transaction;
-}
+const notFound = "Transação não encontrada.";
+
 async function validateReferences(db, userId, data) {
   if (data.tipo === "transferencia") {
     if (!data.conta_destino_id || data.conta_id === data.conta_destino_id) throw new AppError(400, "Transferência exige uma conta de destino diferente da origem.");
@@ -29,22 +28,23 @@ async function validateReferences(db, userId, data) {
     if (!rows[0].ativo) throw new AppError(409, "Método de pagamento inativo.");
   }
 }
-module.exports = {
-  list: repository.list,
-  async find(userId, id) { return required(await repository.find(userId, id)); },
-  async create(userId, data) {
-    return inTransaction(async db => {
-      await validateReferences(db, userId, data);
-      // Uma única linha representa as duas pontas: crédito e débito são atômicos.
-      return repository.create(userId, data, db);
-    });
+module.exports = createService({
+  repository,
+  notFound,
+  overrides: {
+    create(userId, data) {
+      return inTransaction(async db => {
+        await validateReferences(db, userId, data);
+        // Uma única linha representa as duas pontas: crédito e débito são atômicos.
+        return repository.create(userId, data, db);
+      });
+    },
+    update(userId, id, data) {
+      return inTransaction(async db => {
+        const current = ensureFound(await repository.find(userId, id, db, true), notFound);
+        await validateReferences(db, userId, { ...current, ...data });
+        return repository.update(userId, id, data, db);
+      });
+    },
   },
-  async update(userId, id, data) {
-    return inTransaction(async db => {
-      const current = required(await repository.find(userId, id, db, true));
-      await validateReferences(db, userId, { ...current, ...data });
-      return repository.update(userId, id, data, db);
-    });
-  },
-  async remove(userId, id) { required(await repository.remove(userId, id)); },
-};
+});

@@ -18,5 +18,34 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  backend:
+    build:
+      context: ./Backend
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-sistema_financeiro}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env da raiz (veja .env.example)}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/v1/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: ./docker/nginx
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres_data:

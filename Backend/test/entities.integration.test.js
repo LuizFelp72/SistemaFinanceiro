@@ -300,3 +300,68 @@ test("CRUD de meta financeira (goal), validação de datas e isolamento", async 
   await request("DELETE", `/goals/${meta.id}`, undefined, 204);
   await request("GET", `/goals/${meta.id}`, undefined, 404);
 });
+
+test("CRUD de método de pagamento, filtros, exclusão protegida e isolamento", async () => {
+  const owner = randomUUID();
+  await pool.query("INSERT INTO users(id, nome, email, senha_hash) VALUES ($1, 'Teste', $2, 'fixture-sem-login')", [owner, `${owner}@example.test`]);
+  const req = (method, path, body, expected = 200, who = owner) => request(method, path, body, expected, who);
+  const pix = await req("POST", "/payment-methods", { nome: "Pix", tipo: "pix" }, 201);
+  assert.equal(pix.ativo, true);
+  assert.equal(pix.usuario_id, owner);
+  await req("POST", "/payment-methods", { nome: "Cartão", tipo: "credito", ativo: false }, 201);
+  await req("POST", "/payment-methods", { nome: "X", tipo: "cheque" }, 400);
+  await req("POST", "/payment-methods", { tipo: "pix" }, 400);
+  await req("POST", "/payment-methods", { nome: "Y", tipo: "pix", usuario_id: otherId }, 400);
+  await req("PATCH", "/payment-methods/" + pix.id, {}, 400);
+
+  assert.equal((await req("GET", "/payment-methods?tipo=credito")).total, 1);
+  assert.equal((await req("GET", "/payment-methods?ativo=false")).data[0].nome, "Cartão");
+  assert.equal((await req("GET", "/payment-methods?busca=pi")).data[0].id, pix.id);
+  assert.equal((await req("GET", "/payment-methods?busca=%25")).total, 0);
+
+  assert.equal((await req("PATCH", `/payment-methods/${pix.id}`, { nome: "Pix principal" })).nome, "Pix principal");
+  await req("GET", `/payment-methods/${pix.id}`, undefined, 404, otherId);
+  await req("PATCH", `/payment-methods/${pix.id}`, { ativo: false }, 404, otherId);
+  await req("DELETE", `/payment-methods/${pix.id}`, undefined, 404, otherId);
+
+  const conta = await account({}, owner);
+  await req("POST", "/transactions", { descricao: "Compra", valor: "10.00", tipo: "despesa", data: "2026-11-09", conta_id: conta.id, metodo_pagamento_id: pix.id }, 201);
+  await req("DELETE", `/payment-methods/${pix.id}`, undefined, 409);
+  assert.equal((await req("PATCH", `/payment-methods/${pix.id}`, { ativo: false })).ativo, false);
+
+  const livre = await req("POST", "/payment-methods", { nome: "Dinheiro", tipo: "dinheiro" }, 201);
+  await req("DELETE", `/payment-methods/${livre.id}`, undefined, 204);
+  await req("GET", `/payment-methods/${livre.id}`, undefined, 404);
+});
+
+test("cadastro, login e /auth/me", async () => {
+  const email = `Novo.${randomUUID()}@Example.test`;
+  const body = { nome: "Novo Usuário", email, senha: "senha-segura-1" };
+  const registerResponse = await fetch(`${base}/auth/register`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  assert.equal(registerResponse.status, 201);
+  const registered = await registerResponse.json();
+  assert.equal(registered.user.email, email.toLowerCase());
+  assert.equal(registered.user.senha_hash, undefined);
+  assert.ok(registered.token);
+  const { senha_hash: stored } = (await pool.query("SELECT senha_hash FROM users WHERE id = $1", [registered.user.id])).rows[0];
+  assert.notEqual(stored, body.senha);
+
+  await request("POST", "/auth/register", { ...body, email: email.toUpperCase() }, 409, null);
+  await request("POST", "/auth/register", { ...body, email: "invalido" }, 400, null);
+  await request("POST", "/auth/register", { ...body, email: "a@b.test", senha: "curta" }, 400, null);
+  await request("POST", "/auth/register", { nome: "Sem senha", email: "c@d.test" }, 400, null);
+
+  const login = await request("POST", "/auth/login", { email: email.toUpperCase(), senha: body.senha }, 200, null);
+  assert.equal(login.user.id, registered.user.id);
+  await request("POST", "/auth/login", { email, senha: "senha-errada-1" }, 401, null);
+  await request("POST", "/auth/login", { email: "naoexiste@example.test", senha: body.senha }, 401, null);
+
+  // O token emitido funciona nas rotas protegidas e enxerga apenas os dados do próprio usuário.
+  const headers = { Authorization: `Bearer ${login.token}` };
+  const me = await (await fetch(`${base}/auth/me`, { headers })).json();
+  assert.equal(me.id, registered.user.id);
+  assert.equal((await fetch(`${base}/auth/me`)).status, 401);
+  const accounts = await (await fetch(`${base}/accounts`, { headers })).json();
+  assert.equal(accounts.total, 0);
+  assert.equal((await fetch(`${base}/health`)).status, 200);
+});

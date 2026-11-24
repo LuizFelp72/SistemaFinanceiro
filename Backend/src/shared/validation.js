@@ -48,4 +48,17 @@ function pagination(query, allowed = []) {
   }
   return result;
 }
-module.exports = { invalid, uuid, text, choice, boolean, money, date, object, pagination };
+function nullableText(value, field, max = 255) {
+  return value === null || value === "" ? null : text(value, field, max);
+}
+function nullableUuid(value, field) { return value === null ? null : uuid(value, field); }
+function nonNegativeMoney(value, field) {
+  const formatted = money(value, field);
+  if (formatted.startsWith("-")) invalid(`${field} não pode ser negativo.`);
+  return formatted;
+}
+function booleanQuery(value, field) {
+  choice(value, field, ["true", "false"]);
+  return value === "true";
+}
+module.exports = { invalid, uuid, text, choice, boolean, money, date, object, pagination, nullableText, nullableUuid, nonNegativeMoney, booleanQuery };

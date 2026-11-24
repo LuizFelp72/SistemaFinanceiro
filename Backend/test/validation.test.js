@@ -91,3 +91,19 @@ test("filtros e paginação possuem limites e formatos validados", () => {
     assert.throws(() => transaction.filters(query), { status: 400 });
   }
 });
+
+test("DTOs de método de pagamento e autenticação validam campos e rejeitam extras", () => {
+  const payment = require("../src/modules/payment-methods/payment-method.dto");
+  const auth = require("../src/modules/auth/auth.dto");
+  assert.deepEqual(payment.parse({ nome: " Pix ", tipo: "pix" }), { nome: "Pix", tipo: "pix", ativo: true });
+  assert.throws(() => payment.parse({ nome: "X", tipo: "cheque" }), { status: 400 });
+  assert.throws(() => payment.parse({ nome: "X", tipo: "pix", usuario_id: "x" }), { status: 400 });
+  assert.deepEqual(payment.filters({ ativo: "false", busca: "a" }), { page: 1, limit: 20, ativo: false, busca: "a" });
+  assert.throws(() => payment.filters({ ativo: "talvez" }), { status: 400 });
+
+  assert.deepEqual(auth.register({ nome: "Ana", email: " ANA@Mail.com ", senha: "12345678" }), { nome: "Ana", email: "ana@mail.com", senha: "12345678" });
+  assert.throws(() => auth.register({ nome: "Ana", email: "ana@mail.com", senha: "1234567" }), { status: 400 });
+  assert.throws(() => auth.register({ nome: "Ana", email: "ana@mail.com", senha: "é".repeat(37) }), { status: 400 });
+  assert.throws(() => auth.register({ nome: "Ana", email: "sem-arroba", senha: "12345678" }), { status: 400 });
+  assert.throws(() => auth.login({ email: "ana@mail.com" }), { status: 400 });
+});

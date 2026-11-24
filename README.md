@@ -1,48 +1,44 @@
 # SistemaFinanceiro
 Projeto de um sistema financeiro utilizando React e Node JS para a matéria de desenvolvimento web.
 
-## PostgreSQL com Docker
+## Executando com Docker
 
-Na raiz do projeto, com Docker e Docker Compose instalados:
+Requer Docker e Docker Compose. Na raiz do projeto:
 
 ```bash
-docker compose up -d --build --wait postgres
+cp .env.example .env     # defina JWT_SECRET (mínimo de 32 caracteres)
+docker compose up -d --build --wait
 ```
 
-O banco `sistema_financeiro` fica disponível em `localhost:5432`, com usuário
-`postgres` e senha `postgres` para desenvolvimento local. Os dados são mantidos
-no volume `postgres_data`, inclusive após parar ou recriar o container.
+Serviços:
 
-Para configurar o backend e criar as tabelas:
+| Serviço | Função | Acesso |
+| --- | --- | --- |
+| `postgres` | Banco PostgreSQL 17 (dados no volume `postgres_data`) | `localhost:5432` |
+| `backend` | API Node. Aplica as migrações e inicia | interno (porta 3000) |
+| `nginx` | Proxy reverso: encaminha `/api` ao backend | `http://localhost` (`HTTP_PORT`) |
+
+A API fica em `http://localhost/api/v1` (teste: `curl http://localhost/api/v1/health`). As migrações são
+idempotentes e rodam a cada subida do backend; nada é recriado se já estiverem aplicadas.
+
+```bash
+docker compose logs -f backend   # acompanhar migrações e requisições
+docker compose down              # parar preservando os dados (use -v para apagar o volume)
+```
+
+As variáveis do `.env` da raiz (`POSTGRES_*`, `HTTP_PORT`, `JWT_SECRET`, `JWT_EXPIRES_IN`) são descritas em
+`.env.example`. As credenciais do Postgres só valem para um volume novo.
+
+### Desenvolvimento sem Docker para o backend
+
+Suba apenas o banco (`docker compose up -d --build --wait postgres`) e rode a API localmente:
 
 ```bash
 cd Backend
-cp .env.example .env
-# Configure JWT_SECRET no .env.
+cp .env.example .env     # configure JWT_SECRET
 npm ci
 npm run db:migrate
-npm start
+npm run dev
 ```
-
-A `DATABASE_URL` de `Backend/.env.example` já corresponde ao banco do Docker.
-As migrações são executadas pelo backend, separadamente da inicialização do banco.
-
-Para parar o banco preservando os dados, execute na raiz:
-
-```bash
-docker compose down
-```
-
-As variáveis `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_PORT`
-podem ser definidas no ambiente ou em um arquivo `.env` na raiz. Por exemplo,
-se a porta 5432 estiver ocupada:
-
-```bash
-POSTGRES_PORT=5433 docker compose up -d --build --wait postgres
-```
-
-Ao personalizar as credenciais ou a porta, ajuste também a `DATABASE_URL` em
-`Backend/.env`. As credenciais de inicialização são aplicadas somente quando o
-volume de dados está vazio.
 
 Mais detalhes da API em [Backend/README.md](Backend/README.md).
