@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Avatar, Box, Button, Chip, IconButton, LinearProgress, Paper, Snackbar, Stack, Typography } from "@mui/material";
+import { Extrato, Transferir } from "./Movimentos";
 import Add from "@mui/icons-material/Add";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutlineOutlined";
@@ -19,7 +20,7 @@ function Summary({ contas }: { contas: Conta[] }) {
   const active = contas.filter(c => c.ativo).length;
   const cards = [
     { title: "Saldo total", lines: Array.from(totals, ([currency, sum]) => dinheiro(sum, currency)) },
-    { title: "Contas ativas", lines: [String(active)], hint: `${contas.length - active} inativas` },
+    { title: "Contas ativas", lines: [String(active)], hint: `${contas.length - active} ${contas.length - active === 1 ? "inativa" : "inativas"}` },
     { title: "Maior saldo", lines: Array.from(highest.values(), c => dinheiro(centavos(c.saldo_atual), c.moeda) + " · " + c.nome) },
   ];
   return <Box sx={grid}>{cards.map(card => <Paper key={card.title} sx={{ p: 2.5, overflowWrap: "anywhere" }}>
@@ -33,6 +34,10 @@ export default function Contas() {
   const [version, setVersion] = useState(0);
   const [error, setError] = useState("");
   const [action, setAction] = useState<Action | null>(null);
+  const [movimento, setMovimento] = useState<{ mode: "extrato" | "transferir"; conta: Conta } | null>(null);
+  function destinos(origem: Conta) {
+    return (contas ?? []).filter(c => c.ativo && c.id !== origem.id && c.moeda === origem.moeda);
+  }
   const [notice, setNotice] = useState("");
   useEffect(() => {
     const controller = new AbortController();
@@ -41,10 +46,11 @@ export default function Contas() {
     return () => controller.abort();
   }, [version]);
   function reload() { setError(""); setContas(null); setVersion(v => v + 1); }
+  function saved(message: string) { setAction(null); setMovimento(null); setNotice(message); reload(); }
   return <Stack spacing={3}>
     <Stack component="header" direction={{ xs: "column", sm: "row" }} sx={{ justifyContent: "space-between", alignItems: { xs: "start", sm: "center" }, gap: 1.5 }}>
       <Box><Typography component="h1" variant="h5">Contas</Typography><Typography variant="body2" color="text.secondary">Gerencie suas contas financeiras</Typography></Box>
-      <Button variant="contained" startIcon={<Add />} onClick={() => setAction({ mode: "new" })}>Nova conta</Button>
+      <Button aria-label="Nova conta" variant="contained" startIcon={<Add />} onClick={() => setAction({ mode: "new" })}>Nova conta</Button>
     </Stack>
     {error ? <Alert severity="error" action={<Button onClick={reload}>Tentar novamente</Button>}>{error}</Alert> :
       contas === null ? <LinearProgress aria-label="Carregando contas" /> : !contas.length ?
@@ -58,8 +64,14 @@ export default function Contas() {
         </Stack>
         <Stack direction="row" sx={{ mt: 3, alignItems: "center", justifyContent: "space-between" }}><Typography color="text.secondary" variant="body2">{tipos[conta.tipo]}</Typography>{!conta.ativo && <Chip size="small" label="Inativa" />}</Stack>
         <Typography variant="h5" component="p" sx={{ mt: 0.5, overflowWrap: "anywhere", fontVariantNumeric: "tabular-nums", color: centavos(conta.saldo_atual) < 0n ? "error.dark" : "text.primary" }}>{dinheiro(centavos(conta.saldo_atual), conta.moeda)}</Typography>
+        <Stack direction="row" spacing={1} sx={{ borderTop: 1, borderColor: "divider", mt: 2, pt: 2, flexWrap: "wrap", rowGap: 1 }}>
+          <Button variant="outlined" size="small" onClick={() => setMovimento({ mode: "extrato", conta })}>Extrato</Button>
+          <Button size="small" disabled={!conta.ativo || !destinos(conta).length} onClick={() => setMovimento({ mode: "transferir", conta })}>Transferir</Button>
+        </Stack>
       </Paper>)}</Box></>}
-    {action && <AccountDialog action={action} close={() => setAction(null)} saved={message => { setAction(null); setNotice(message); reload(); }} />}
+    {movimento?.mode === "extrato" && <Extrato conta={movimento.conta} close={() => setMovimento(null)} />}
+    {movimento?.mode === "transferir" && <Transferir origem={movimento.conta} destinos={destinos(movimento.conta)} close={() => setMovimento(null)} saved={saved} />}
+    {action && <AccountDialog action={action} close={() => setAction(null)} saved={saved} />}
     <Snackbar open={!!notice} message={notice} autoHideDuration={3500} onClose={() => setNotice("")} />
   </Stack>;
 }
