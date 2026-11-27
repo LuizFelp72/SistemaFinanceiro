@@ -12,6 +12,7 @@ export const StyledDrawer = styled(Drawer)(({ theme }) => ({
     backgroundColor: "#0f172a",
     color: "#cbd5e1",
     borderRight: "none",
+    borderRadius: 0,
   },
   [theme.breakpoints.down("md")]: {
     width: MOBILE_DRAWER_WIDTH,
