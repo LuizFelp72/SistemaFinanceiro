@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 import { CircularProgress, Box } from "@mui/material";
 import ProtectedRoute from "../auth/ProtectedRoute";
 
@@ -36,6 +36,7 @@ function AppRoutes() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="*" element={<Box><h1>Página indisponível</h1><Link to="/contas">Voltar para Contas</Link></Box>} />
             <Route path="contas" element={<Contas />} />
             <Route path="transacoes" element={<Transacoes />} />
             <Route path="bens-patrimonio" element={<BensPatrimonio />} />

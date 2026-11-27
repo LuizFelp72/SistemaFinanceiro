@@ -20,13 +20,15 @@ function Sidebar() {
 
       <NavList>
         <List disablePadding>
-          {menuItems.map(({ label, path, icon: Icon }) => {
+          {menuItems.map(({ label, path, pendente, icon: Icon }) => {
             const isActive = location.pathname === path
               || (path === "/" && location.pathname === "/dashboard");
 
             return (
-              <Tooltip key={path} title={label} placement="right" enterDelay={500}>
+              <Tooltip key={path} title={pendente ? label + " · Em desenvolvimento" : label} placement="right" enterDelay={500}>
+                <span style={{ display: "block" }}>
                 <NavItem
+                  disabled={pendente}
                   active={isActive}
                   aria-label={label}
                   aria-current={isActive ? "page" : undefined}
@@ -37,6 +39,7 @@ function Sidebar() {
                   </ListItemIcon>
                   <ListItemText primary={label} />
                 </NavItem>
+                </span>
               </Tooltip>
             );
           })}

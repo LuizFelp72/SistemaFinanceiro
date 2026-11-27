@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -56,10 +57,13 @@ const estiloCelula = {
 function Transacoes() {
   const transacoes = useMemo(() => listarTransacoes(), []);
 
+  const [detalhe, setDetalhe] = useState<(typeof transacoes)[number] | null>(null);
   const [busca, setBusca] = useState("");
   const [filtroConta, setFiltroConta] = useState("todas");
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -81,9 +85,9 @@ function Transacoes() {
       const combinaTipo = filtroTipo === "todos" || t.tipo === filtroTipo;
       const combinaCategoria =
         filtroCategoria === "todas" || t.categoria === filtroCategoria;
-      return combinaBusca && combinaConta && combinaTipo && combinaCategoria;
+      return (!de || t.data >= de) && (!ate || t.data <= ate) && combinaBusca && combinaConta && combinaTipo && combinaCategoria;
     });
-  }, [transacoes, busca, filtroConta, filtroTipo, filtroCategoria]);
+  }, [transacoes, busca, filtroConta, filtroTipo, filtroCategoria, de, ate]);
 
   const inicio = page * rowsPerPage;
   const linhas = filtradas.slice(inicio, inicio + rowsPerPage);
@@ -102,7 +106,7 @@ function Transacoes() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+          <Typography component="h1" variant="h5" sx={{ fontWeight: 700 }}>
             Transações
           </Typography>
           <Typography sx={{ color: CORES.texto, fontSize: 14 }}>
@@ -111,6 +115,7 @@ function Transacoes() {
         </Box>
         <Button
           variant="contained"
+          disabled
           startIcon={<AddIcon />}
           sx={{
             bgcolor: CORES.primaria,
@@ -132,7 +137,7 @@ function Transacoes() {
         <TextField
           size="small"
           fullWidth
-          placeholder="Buscar transações..."
+          label="Buscar transações"
           value={busca}
           onChange={(evento) => {
             setBusca(evento.target.value);
@@ -155,6 +160,7 @@ function Transacoes() {
           <TextField
             select
             size="small"
+            label="Conta"
             value={filtroConta}
             onChange={(evento) => {
               setFiltroConta(evento.target.value);
@@ -173,6 +179,7 @@ function Transacoes() {
           <TextField
             select
             size="small"
+            label="Tipo"
             value={filtroTipo}
             onChange={(evento) => {
               setFiltroTipo(evento.target.value);
@@ -188,6 +195,7 @@ function Transacoes() {
           <TextField
             select
             size="small"
+            label="Categoria"
             value={filtroCategoria}
             onChange={(evento) => {
               setFiltroCategoria(evento.target.value);
@@ -203,15 +211,18 @@ function Transacoes() {
             ))}
           </TextField>
 
-          {/* Por enquanto só visual, como no modelo */}
-          <TextField
-            size="small"
-            defaultValue="01/05/2025 - 31/05/2025"
-            sx={{ minWidth: 200 }}
-          />
-
+          <TextField size="small" label="De" type="date" value={de}
+            onChange={e => { setDe(e.target.value); setPage(0); }}
+            slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: ate || undefined } }} />
+          <TextField size="small" label="Até" type="date" value={ate}
+            error={!!de && !!ate && ate < de} helperText={de && ate && ate < de ? "O fim deve ser igual ou posterior ao início." : undefined}
+            onChange={e => { setAte(e.target.value); setPage(0); }}
+            slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: de || undefined } }} />
           <Button
+            disabled={!busca && !de && !ate && filtroConta === "todas" && filtroTipo === "todos" && filtroCategoria === "todas"}
+            onClick={() => { setBusca(""); setDe(""); setAte(""); setFiltroConta("todas"); setFiltroCategoria("todas"); setFiltroTipo("todos"); setPage(0); }}
             variant="outlined"
+            aria-label="Limpar filtros"
             startIcon={<FilterListOutlinedIcon />}
             sx={{
               textTransform: "none",
@@ -219,7 +230,7 @@ function Transacoes() {
               color: CORES.texto,
             }}
           >
-            Mais filtros
+            Limpar filtros
           </Button>
         </Box>
 
@@ -310,13 +321,13 @@ function Transacoes() {
                       {t.conta}
                     </TableCell>
                     <TableCell align="right" sx={estiloCelula}>
-                      <IconButton size="small">
+                      <IconButton size="small" aria-label={`Ver detalhes de ${t.descricao}`} onClick={() => setDetalhe(t)}>
                         <VisibilityOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small">
+                      <IconButton size="small" disabled aria-label={`Editar ${t.descricao}`}>
                         <EditOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small">
+                      <IconButton size="small" disabled aria-label={`Excluir ${t.descricao}`}>
                         <DeleteOutlineOutlinedIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
@@ -370,6 +381,11 @@ function Transacoes() {
           />
         </Box>
       </Paper>
+      <Dialog open={!!detalhe} onClose={() => setDetalhe(null)} aria-labelledby="transacao-detalhe">
+        <DialogTitle id="transacao-detalhe">{detalhe?.descricao}</DialogTitle>
+        {detalhe && <DialogContent><Typography>{capitalizar(detalhe.tipo)} · {formatarMoeda(detalhe.valor)}</Typography><Typography>{formatarData(detalhe.data)} · {detalhe.conta}</Typography><Typography>{detalhe.categoria} · {capitalizar(detalhe.status)}</Typography></DialogContent>}
+        <DialogActions><Button onClick={() => setDetalhe(null)}>Fechar</Button></DialogActions>
+      </Dialog>
     </Box>
   );
 }

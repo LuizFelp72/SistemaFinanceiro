@@ -5,8 +5,9 @@ import { Content } from "./styles";
 function MainLayout() {
   return (
     <>
+      <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
       <Sidebar />
-      <Content>
+      <Content id="conteudo" tabIndex={-1}>
         <Outlet />
       </Content>
     </>

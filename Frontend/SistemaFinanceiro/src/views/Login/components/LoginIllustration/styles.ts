@@ -13,6 +13,7 @@ export const RightPanel = styled(Box)(({ theme }) => ({
   gap: theme.spacing(2),
   padding: theme.spacing(6),
   textAlign: "center",
+  [theme.breakpoints.down("sm")]: { display: "none" },
 }));
 
 export const ImageWrapper = styled(Box)(() => ({

@@ -1,7 +1,7 @@
-import { Box, styled } from "@mui/material";
+import { styled } from "@mui/material";
 import { DRAWER_WIDTH, MOBILE_DRAWER_WIDTH } from "./components/Sidebar/styles";
 
-export const Content = styled(Box)(({ theme }) => ({
+export const Content = styled("main")(({ theme }) => ({
   marginLeft: DRAWER_WIDTH,
   padding: theme.spacing(3),
   minHeight: "100vh",

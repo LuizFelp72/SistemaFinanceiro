@@ -8,7 +8,7 @@ import {
 } from "echarts/components";
 import { SVGRenderer } from "echarts/renderers";
 import type { EChartsOption } from "echarts";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useMediaQuery } from "@mui/material";
 
 echarts.use([
   LineChart,
@@ -27,6 +27,7 @@ interface ChartProps {
 }
 
 export default function Chart({ option, label, height = 230, empty }: ChartProps) {
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   if (empty) {
     return (
       <Box
@@ -45,6 +46,7 @@ export default function Chart({ option, label, height = 230, empty }: ChartProps
         echarts={echarts}
         option={{
           ...option,
+          ...(reducedMotion && { animation: false }),
           textStyle: { fontFamily: "Roboto, Arial, sans-serif" },
           aria: { enabled: true, label: { description: label } },
         }}
