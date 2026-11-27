@@ -44,7 +44,7 @@ export default function BensPatrimonio() {
       <Box component="header" sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2, mb: 0.5 }}>
         <Box>
           <Typography component="h1" variant="h5" sx={{ fontSize: 23, letterSpacing: "-.5px", mb: 0.5 }}>Bens / Patrimônio</Typography>
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Gerencie seus bens e ativos</Typography>
+          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Gerencie seus bens e ativos · Dados de demonstração</Typography>
         </Box>
         <Tooltip title="Cadastro disponível na próxima etapa">
           <span><Button disabled variant="contained" startIcon={<AddRoundedIcon />} size="small">Novo bem</Button></span>

@@ -43,7 +43,7 @@ export default function Dashboard() {
             Dashboard
           </Typography>
           <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
-            Visão geral da sua vida financeira
+            Visão geral da sua vida financeira · Dados de demonstração
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.5 }}>

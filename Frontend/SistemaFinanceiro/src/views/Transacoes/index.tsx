@@ -106,7 +106,7 @@ function Transacoes() {
             Transações
           </Typography>
           <Typography sx={{ color: CORES.texto, fontSize: 14 }}>
-            Gerencie todas as suas transações financeiras
+            Gerencie todas as suas transações financeiras · Dados de demonstração
           </Typography>
         </Box>
         <Button

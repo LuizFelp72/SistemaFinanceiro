@@ -9,6 +9,8 @@ const Dashboard = lazy(() => import("../views/Dashboard"));
 const Transacoes = lazy(() => import("../views/Transacoes"));
 const BensPatrimonio = lazy(() => import("../views/BensPatrimonio"));
 
+const Contas = lazy(() => import("../views/Contas"));
+
 function Loading() {
   return (
     <Box
@@ -34,6 +36,7 @@ function AppRoutes() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="contas" element={<Contas />} />
             <Route path="transacoes" element={<Transacoes />} />
             <Route path="bens-patrimonio" element={<BensPatrimonio />} />
           </Route>

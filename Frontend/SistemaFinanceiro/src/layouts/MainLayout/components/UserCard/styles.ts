@@ -7,13 +7,13 @@ export const CardContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2),
   margin: theme.spacing(1),
   borderRadius: theme.shape.borderRadius,
-  cursor: "pointer",
+  
   "&:hover": {
     backgroundColor: "rgba(255,255,255,0.05)",
   },
   [theme.breakpoints.down("md")]: {
     justifyContent: "center",
     padding: theme.spacing(1),
-    "& > .MuiBox-root, & > .MuiSvgIcon-root": { display: "none" },
+    "& > .MuiBox-root, & > .MuiAvatar-root": { display: "none" },
   },
 }));
