@@ -24,7 +24,9 @@ import FilterListOutlinedIcon from "@mui/icons-material/FilterListOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import { listarTransacoes } from "../../services/transacoes/transacoes.service";
+import FinanceData from "../../components/FinanceData";
+import FinanceEditor, { type EditAction } from "../../components/FinanceEditor";
+import { type Ledger, presentTransactions, label } from "../../services/finance";
 import {
   CORES_CATEGORIA,
   capitalizar,
@@ -55,7 +57,11 @@ const estiloCelula = {
 };
 
 function Transacoes() {
-  const transacoes = useMemo(() => listarTransacoes(), []);
+  return <FinanceData resources="transactions accounts categories payment-methods">{(db,reload) => <Lista db={db} reload={reload} />}</FinanceData>;
+}
+function Lista({db,reload}: {db:Ledger;reload():void}) {
+  const transacoes = useMemo(() => presentTransactions(db), [db]);
+  const [action,setAction] = useState<EditAction|null>(null);
 
   const [detalhe, setDetalhe] = useState<(typeof transacoes)[number] | null>(null);
   const [busca, setBusca] = useState("");
@@ -89,7 +95,8 @@ function Transacoes() {
     });
   }, [transacoes, busca, filtroConta, filtroTipo, filtroCategoria, de, ate]);
 
-  const inicio = page * rowsPerPage;
+  const pagina = Math.min(page, Math.max(0, Math.ceil(filtradas.length / rowsPerPage) - 1));
+  const inicio = pagina * rowsPerPage;
   const linhas = filtradas.slice(inicio, inicio + rowsPerPage);
 
   return (
@@ -110,12 +117,12 @@ function Transacoes() {
             Transações
           </Typography>
           <Typography sx={{ color: CORES.texto, fontSize: 14 }}>
-            Gerencie todas as suas transações financeiras · Dados de demonstração
+            Gerencie todas as suas transações financeiras
           </Typography>
         </Box>
         <Button
           variant="contained"
-          disabled
+          onClick={() => setAction({mode:"create"})}
           startIcon={<AddIcon />}
           sx={{
             bgcolor: CORES.primaria,
@@ -190,6 +197,7 @@ function Transacoes() {
             <MenuItem value="todos">Todos os tipos</MenuItem>
             <MenuItem value="receita">Receita</MenuItem>
             <MenuItem value="despesa">Despesa</MenuItem>
+            <MenuItem value="transferencia">Transferência</MenuItem>
           </TextField>
 
           <TextField
@@ -276,7 +284,7 @@ function Transacoes() {
                     <TableCell sx={estiloCelula}>
                       <Chip
                         size="small"
-                        label={capitalizar(t.tipo)}
+                        label={label(t.tipo)}
                         sx={{
                           backgroundColor:
                             t.tipo === "receita" ? "#E6F7EF" : "#FDEBEC",
@@ -298,7 +306,7 @@ function Transacoes() {
                         }}
                       >
                         {t.tipo === "despesa" ? "-" : ""}
-                        {formatarMoeda(t.valor)}
+                        {formatarMoeda(t.valor,t.moeda)}
                       </Typography>
                     </TableCell>
                     <TableCell sx={estiloCelula}>
@@ -324,10 +332,10 @@ function Transacoes() {
                       <IconButton size="small" aria-label={`Ver detalhes de ${t.descricao}`} onClick={() => setDetalhe(t)}>
                         <VisibilityOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" disabled aria-label={`Editar ${t.descricao}`}>
+                      <IconButton size="small" onClick={() => setAction({mode:"edit",row:db.transactions.find(r => r.id === t.id)})} aria-label={`Editar ${t.descricao}`}>
                         <EditOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" disabled aria-label={`Excluir ${t.descricao}`}>
+                      <IconButton size="small" onClick={() => setAction({mode:"delete",row:db.transactions.find(r => r.id === t.id)})} aria-label={`Excluir ${t.descricao}`}>
                         <DeleteOutlineOutlinedIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
@@ -366,7 +374,7 @@ function Transacoes() {
           <TablePagination
             component="div"
             count={filtradas.length}
-            page={page}
+            page={pagina}
             onPageChange={(_, novaPage) => setPage(novaPage)}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={(evento) => {
@@ -381,9 +389,10 @@ function Transacoes() {
           />
         </Box>
       </Paper>
+      {action && <FinanceEditor resource="transactions" db={db} action={action} close={() => setAction(null)} saved={() => { setAction(null); reload(); }} />}
       <Dialog open={!!detalhe} onClose={() => setDetalhe(null)} aria-labelledby="transacao-detalhe">
         <DialogTitle id="transacao-detalhe">{detalhe?.descricao}</DialogTitle>
-        {detalhe && <DialogContent><Typography>{capitalizar(detalhe.tipo)} · {formatarMoeda(detalhe.valor)}</Typography><Typography>{formatarData(detalhe.data)} · {detalhe.conta}</Typography><Typography>{detalhe.categoria} · {capitalizar(detalhe.status)}</Typography></DialogContent>}
+        {detalhe && <DialogContent><Typography>{label(detalhe.tipo)} · {formatarMoeda(detalhe.valor,detalhe.moeda)}</Typography><Typography>{formatarData(detalhe.data)} · {detalhe.conta}{detalhe.destino && " → " + detalhe.destino}</Typography><Typography>{detalhe.categoria} · {capitalizar(detalhe.status)}</Typography></DialogContent>}
         <DialogActions><Button onClick={() => setDetalhe(null)}>Fechar</Button></DialogActions>
       </Dialog>
     </Box>

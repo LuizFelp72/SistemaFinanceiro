@@ -67,3 +67,11 @@ As cinco páginas do PDF mostram, em ordem, dashboard/transações, bens/contas,
 - Busca por “Uber” e intervalo de um dia em 31/05/2025 retornaram um registro cada na demonstração. Limpeza dos filtros e retorno de foco após Escape verificados. Em Contas, captura de 1440×900 e 390×844; nenhum transbordamento horizontal da página no celular. Houve erros transitórios de HMR enquanto os arquivos eram editados e HTTP 409 esperado na exclusão com vínculo. Não houve auditoria integral de leitor de tela, carga, segurança ou Lighthouse.
 - [Antes da rota Contas](evidencias/contas-antes.png) · [Depois em desktop](evidencias/contas-desktop.png) · [Depois em celular](evidencias/contas-mobile.png).
 - Antes da integração, revisar a sessão por aba e o primeiro destino após login (/contas), validar o proxy com o ambiente de homologação e decidir as regras de orçamento e limite de cartão. Planejar teste de navegador repetível dos fluxos críticos. O CRUD de Contas está funcional; o produto como um todo ainda depende dos módulos acima.
+
+## Atualização após 436ee10
+
+O merge 436ee10 trouxe b53bee2 para a main. O diff desde c23ec34 altera 77 arquivos no frontend e não altera Backend ou Compose. A main tem telas mais completas e uma API simulada em services/mock; localStorage contém inclusive dados e credenciais de demonstração. O frontend desta branch continua usando JWT e os endpoints reais.
+
+Para a futura conciliação, preservar a composição dos wireframes da main onde agregar valor (Página, Controles e formulários), adaptar os componentes ao transporte HTTP e manter as credenciais de demonstração fora do fluxo autenticado. Conferir os campos de cartão, histórico de avaliações, orçamentos, perfil e preferências quando os contratos reais chegarem. Evitar vincular os rascunhos locais a registros no servidor automaticamente: revisar categoria, mês e duplicatas antes de importar.
+
+A branch conecta Dashboard, Transações, Bens, Categorias, Metas e Métodos de pagamento aos endpoints existentes. Relatórios agregam os lançamentos concluídos por ano e moeda e oferecem CSV e impressão. Orçamentos calcula gastos reais com limites rotulados como rascunhos locais. Configurações usa os dados do usuário autenticado com perfil em leitura e acesso à gestão dos métodos de pagamento.

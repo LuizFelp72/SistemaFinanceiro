@@ -15,7 +15,7 @@ const moeda = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-export const formatarMoeda = (valor: number) => moeda.format(valor);
+export const formatarMoeda = (valor: number, currency = "BRL") => currency === "BRL" ? moeda.format(valor) : new Intl.NumberFormat("pt-BR", {style:"currency", currency}).format(valor);
 
 export function formatarData(data: string) {
   const [ano, mes, dia] = data.split("-");

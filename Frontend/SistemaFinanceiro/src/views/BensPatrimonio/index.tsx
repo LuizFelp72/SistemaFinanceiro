@@ -12,13 +12,16 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import NorthEastRoundedIcon from "@mui/icons-material/NorthEastRounded";
 import SouthEastRoundedIcon from "@mui/icons-material/SouthEastRounded";
 import EastRoundedIcon from "@mui/icons-material/EastRounded";
-import { listarBens } from "../../services/bens/bens.service";
+import FinanceData from "../../components/FinanceData";
+import FinanceEditor, { type EditAction } from "../../components/FinanceEditor";
+import type { Ledger } from "../../services/finance";
 import type { Bem, CategoriaBem } from "../../services/bens/bens.types";
 import { formatarData, formatarMoeda } from "../../utils/financeiro";
 import Composition from "./Composition";
 import { Card, Container, Summary } from "./styles";
 
 function Variacao({ valor }: { valor: number }) {
+  if (!Number.isFinite(valor)) return <span aria-label="Sem base de comparação">—</span>;
   const Icon = valor > 0 ? NorthEastRoundedIcon : valor < 0 ? SouthEastRoundedIcon : EastRoundedIcon;
   return (
     <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: valor > 0 ? "#21A366" : valor < 0 ? "#E5535E" : "text.secondary", fontSize: 12 }}>
@@ -29,7 +32,15 @@ function Variacao({ valor }: { valor: number }) {
 }
 
 export default function BensPatrimonio() {
-  const bens = useMemo(() => listarBens(), []);
+  return <FinanceData resources="assets">{(db,reload) => <Patrimonio db={db} reload={reload} />}</FinanceData>;
+}
+function Patrimonio({db,reload}:{db:Ledger;reload():void}) {
+  const [action,setAction] = useState<EditAction|null>(null);
+  const bens = useMemo(() => db.assets.map(a => {
+    const categorias: Record<string,CategoriaBem> = { "imóvel":"Imóveis", "imóveis":"Imóveis", "veículo":"Veículos", "veículos":"Veículos", "investimento":"Investimentos", "investimentos":"Investimentos" };
+    return { id:a.id, nome:a.nome, categoria:categorias[a.tipo.toLocaleLowerCase("pt-BR")] ?? "Outros", valorAtual:Number(a.valor_atual), dataAquisicao:a.data_aquisicao,
+      variacao:Number(a.valor_aquisicao) ? (Number(a.valor_atual)/Number(a.valor_aquisicao)-1)*100 : NaN };
+  }),[db]);
   const [categoria, setCategoria] = useState<CategoriaBem | "todos">("todos");
   const [busca, setBusca] = useState("");
   const [detalhe, setDetalhe] = useState<Bem | null>(null);
@@ -44,10 +55,10 @@ export default function BensPatrimonio() {
       <Box component="header" sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2, mb: 0.5 }}>
         <Box>
           <Typography component="h1" variant="h5" sx={{ fontSize: 23, letterSpacing: "-.5px", mb: 0.5 }}>Bens / Patrimônio</Typography>
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Gerencie seus bens e ativos · Dados de demonstração</Typography>
+          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Gerencie seus bens e ativos</Typography>
         </Box>
-        <Tooltip title="Cadastro disponível na próxima etapa">
-          <span><Button disabled variant="contained" startIcon={<AddRoundedIcon />} size="small">Novo bem</Button></span>
+        <Tooltip title="Cadastrar bem">
+          <span><Button onClick={() => setAction({mode:"create"})} variant="contained" startIcon={<AddRoundedIcon />} size="small">Novo bem</Button></span>
         </Tooltip>
       </Box>
 
@@ -108,8 +119,8 @@ export default function BensPatrimonio() {
                   <TableCell sx={{ color: "text.secondary" }}>{formatarData(bem.dataAquisicao)}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Ver detalhes"><IconButton size="small" aria-label={`Ver detalhes de ${bem.nome}`} onClick={() => setDetalhe(bem)}><VisibilityOutlinedIcon sx={{ fontSize: 17 }} /></IconButton></Tooltip>
-                    <IconButton size="small" disabled aria-label={`Editar ${bem.nome}`}><EditOutlinedIcon sx={{ fontSize: 17 }} /></IconButton>
-                    <IconButton size="small" disabled aria-label={`Excluir ${bem.nome}`}><DeleteOutlineOutlinedIcon sx={{ fontSize: 17 }} /></IconButton>
+                    <IconButton size="small" onClick={() => setAction({mode:"edit",row:db.assets.find(r=>r.id===bem.id)})} aria-label={`Editar ${bem.nome}`}><EditOutlinedIcon sx={{ fontSize: 17 }} /></IconButton>
+                    <IconButton size="small" onClick={() => setAction({mode:"delete",row:db.assets.find(r=>r.id===bem.id)})} aria-label={`Excluir ${bem.nome}`}><DeleteOutlineOutlinedIcon sx={{ fontSize: 17 }} /></IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -120,6 +131,7 @@ export default function BensPatrimonio() {
         <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 2.5, px: 1.5 }}>Mostrando {filtrados.length ? 1 : 0} a {filtrados.length} de {filtrados.length} bens</Typography>
       </Card>
 
+      {action && <FinanceEditor resource="assets" db={db} action={action} close={() => setAction(null)} saved={() => { setAction(null); reload(); }} />}
       <Dialog open={Boolean(detalhe)} onClose={() => setDetalhe(null)} fullWidth maxWidth="xs">
         <DialogTitle>{detalhe?.nome}</DialogTitle>
         <DialogContent>

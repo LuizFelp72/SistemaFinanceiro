@@ -4,3 +4,9 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+@media print {
+  .MuiDrawer-root, .no-print, .skip-link { display: none !important; }
+  main#conteudo { margin: 0; padding: 0; background: white; }
+  .financial-report .MuiPaper-root { break-inside: avoid; box-shadow:none; }
+}

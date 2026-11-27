@@ -25,13 +25,13 @@ export const menuItems: MenuItem[] = [
     icon: AccountBalanceWalletOutlinedIcon,
   },
   { label: "Contas", path: "/contas", icon: CreditCardOutlinedIcon },
-  { label: "Orçamentos", path: "/orcamentos", pendente: true, icon: CalendarTodayOutlinedIcon },
-  { label: "Relatórios", path: "/relatorios", pendente: true, icon: AssessmentOutlinedIcon },
-  { label: "Metas", path: "/metas", pendente: true, icon: FlagOutlinedIcon },
-  { label: "Categorias", path: "/categorias", pendente: true, icon: LocalOfferOutlinedIcon },
+  { label: "Orçamentos", path: "/orcamentos", icon: CalendarTodayOutlinedIcon },
+  { label: "Relatórios", path: "/relatorios", icon: AssessmentOutlinedIcon },
+  { label: "Metas", path: "/metas", icon: FlagOutlinedIcon },
+  { label: "Categorias", path: "/categorias", icon: LocalOfferOutlinedIcon },
   {
     label: "Configurações",
-    path: "/configuracoes", pendente: true,
+    path: "/configuracoes",
     icon: SettingsOutlinedIcon,
   },
 ];

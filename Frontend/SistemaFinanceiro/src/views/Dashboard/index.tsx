@@ -5,8 +5,8 @@ import ArrowCircleDownOutlinedIcon from "@mui/icons-material/ArrowCircleDownOutl
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CottageOutlinedIcon from "@mui/icons-material/CottageOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import { saldosDashboardMock } from "../../services/dashboard/dashboard.mock";
-import { listarTransacoes } from "../../services/transacoes/transacoes.service";
+import FinanceData from "../../components/FinanceData";
+import { presentTransactions, type Ledger } from "../../services/finance";
 import { formatarData } from "../../utils/financeiro";
 import CategoryDistribution from "./components/CategoryDistribution";
 import FinancialEvolution from "./components/FinancialEvolution";
@@ -18,7 +18,12 @@ import { dataISO, dataLocal, limitesDoMes, montarEvolucao, quantidadeDias, resum
 import { ChartGrid, DashboardContainer, DetailGrid, SummaryGrid } from "./styles";
 
 export default function Dashboard() {
-  const transacoes = useMemo(() => listarTransacoes(), []);
+  return <FinanceData resources="accounts transactions categories assets">{db => <Resumo db={db} />}</FinanceData>;
+}
+function Resumo({db}:{db:Ledger}) {
+  const transacoes = useMemo(() => presentTransactions(db).flatMap(t => t.moeda === "BRL" && t.tipo !== "transferencia" ? [{...t, tipo:t.tipo}] : []),[db]);
+  const inicial = db.accounts.filter(a => a.moeda === "BRL").reduce((n,a)=>n+Number(a.saldo_inicial),0);
+  const patrimonio = db.assets.reduce((n,a)=>n+Number(a.valor_atual),0);
   const meses = [...new Set(transacoes.map((transacao) => transacao.data.slice(0, 7)))].sort().reverse();
   const mesInicial = meses[0] ?? dataISO(new Date()).slice(0, 7);
   const [periodo, setPeriodo] = useState(mesInicial);
@@ -30,7 +35,7 @@ export default function Dashboard() {
   const movimentos = consideradas.filter((transacao) => transacao.data >= limites.inicio && transacao.data <= limites.fim);
   const resumo = resumirTransacoes(movimentos);
   const anteriores = resumirTransacoes(consideradas.filter((transacao) => transacao.data < limites.inicio));
-  const saldoInicial = saldosDashboardMock.saldoInicial + anteriores.saldo;
+  const saldoInicial = inicial + anteriores.saldo;
   const saldoTotal = saldoInicial + resumo.saldo;
   const pontos = montarEvolucao(movimentos, limites.inicio, limites.fim, saldoInicial);
   const descricaoTotais = "Transações concluídas no período";
@@ -43,7 +48,7 @@ export default function Dashboard() {
             Dashboard
           </Typography>
           <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
-            Visão geral da sua vida financeira · Dados de demonstração
+            Visão geral das suas finanças em reais
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.5 }}>
@@ -99,8 +104,8 @@ export default function Dashboard() {
         />
         <SummaryCard
           title="Patrimônio líquido"
-          value={saldoTotal + saldosDashboardMock.patrimonioForaDasContas}
-          description="Saldo total + patrimônio fora das contas"
+          value={saldoTotal + patrimonio}
+          description="Saldo do período + valor atual dos bens"
           icon={CottageOutlinedIcon}
           color="#7057F0"
           background="#F3F0FF"
