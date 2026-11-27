@@ -47,7 +47,7 @@ async function request(method, path, body, expected = 200, owner = userId) {
   });
   const data = response.status === 204 ? null : await response.json();
   assert.equal(response.status, expected, JSON.stringify(data));
-  if (expected === 201) assert.ok(response.headers.get("location").endsWith(data.id));
+  if (expected === 201 && !path.startsWith("/auth/")) assert.ok(response.headers.get("location").endsWith(data.id));
   return data;
 }
 const account = (data = {}, owner = userId) => request("POST", "/accounts", { nome: "Conta teste", tipo: "corrente", saldo_inicial: "100.00", ...data }, 201, owner);
@@ -364,4 +364,36 @@ test("cadastro, login e /auth/me", async () => {
   const accounts = await (await fetch(`${base}/accounts`, { headers })).json();
   assert.equal(accounts.total, 0);
   assert.equal((await fetch(`${base}/health`)).status, 200);
+});
+
+test("orçamentos persistem, isolam usuários e somam centavos por moeda", async () => {
+  const categoria = await request("POST", "/categories", {nome:"Orçamento teste",tipo:"despesa"},201);
+  const body = {categoria_id:categoria.id,mes:"2026-11",valor_limite:"10.00"};
+  const budget = await request("POST","/budgets",body,201);
+  await request("POST","/budgets",body,409);
+  await request("GET","/budgets/"+budget.id,undefined,404,otherId);
+  const brl = await account();
+  const usd = await account({moeda:"USD"});
+  for (const valor of ["0.10","0.20"]) await transaction(brl,{tipo:"despesa",categoria_id:categoria.id,valor});
+  await transaction(usd,{tipo:"despesa",categoria_id:categoria.id,valor:"1.00"});
+  await transaction(brl,{tipo:"despesa",categoria_id:categoria.id,valor:"2.00",status:"pendente"});
+  assert.equal((await request("GET","/budgets/"+budget.id)).valor_gasto,"0.30");
+  await request("PATCH","/categories/"+categoria.id,{tipo:"receita"},409);
+  await request("PATCH","/budgets/"+budget.id,{valor_limite:"20.00"});
+  await request("DELETE","/budgets/"+budget.id,undefined,204);
+});
+
+test("perfil e troca de senha revogam tokens anteriores", async () => {
+  const email = randomUUID()+"@example.test";
+  const registered = await request("POST","/auth/register",{nome:"Perfil",email,senha:"senha-original-1"},201,null);
+  const call = (path,method,body,token=registered.token) => fetch(base+path,{method,headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:body ? JSON.stringify(body):undefined});
+  assert.equal((await call("/auth/me","PATCH",{nome:"Nome atualizado"})).status,200);
+  assert.equal((await call("/auth/password","POST",{senha_atual:"errada",nova_senha:"nova-senha-123"})).status,400);
+  const changed = await call("/auth/password","POST",{senha_atual:"senha-original-1",nova_senha:"nova-senha-123"});
+  assert.equal(changed.status,200);
+  const fresh = await changed.json();
+  assert.equal((await call("/auth/me","GET")).status,401);
+  assert.equal((await call("/auth/me","GET",undefined,fresh.token)).status,200);
+  await request("POST","/auth/login",{email,senha:"senha-original-1"},401,null);
+  await request("POST","/auth/login",{email,senha:"nova-senha-123"},200,null);
 });
