@@ -42,3 +42,16 @@ npm run dev
 ```
 
 Mais detalhes da API em [Backend/README.md](Backend/README.md).
+
+## Frontend local
+
+Depois de subir a API e aplicar as migrações, execute na pasta `Frontend/SistemaFinanceiro`:
+
+```bash
+npm ci
+npm run dev
+```
+
+Abra a URL do Vite e use **Criar cadastro**. O proxy de desenvolvimento encaminha `/api` para `http://127.0.0.1:3000`. Para a API do Compose, configure `API_PROXY_TARGET=http://localhost` no ambiente do terminal (ajuste a porta se alterou HTTP_PORT). Em produção, a SPA precisa ser servida com fallback de rotas e com `/api` encaminhado ao backend na mesma origem.
+
+O [diagnóstico e a validação](docs/diagnostico-ui.md) registram a cobertura dos módulos e as telas que ainda usam demonstração.

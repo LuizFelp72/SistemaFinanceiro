@@ -35,7 +35,7 @@ O token deve ser JWT HS256 assinado com `JWT_SECRET`, ter `sub` igual ao UUID de
 um registro existente em `users` e conter `exp` válido. A API verifica a
 assinatura, a expiração e a existência do usuário a cada requisição.
 
-Cadastro e login ficam em `/api/v1/auth` e emitem o token. O frontend ainda usa mocks.
+Cadastro e login ficam em `/api/v1/auth` e emitem o token. Login, Contas, extrato e transferência usam esta API. Dashboard, a listagem geral de transações e Bens ainda usam dados de demonstração.
 
 O `usuario_id` é sempre obtido do token. Enviá-lo no corpo é rejeitado.
 Referências a contas, categorias e métodos de outros usuários são rejeitadas,

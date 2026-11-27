@@ -37,3 +37,33 @@ A suíte Backend/test/entities.integration.test.js exercita as rotas via HTTP e 
 
 ## Wireframes e plano
 As cinco páginas do PDF mostram, em ordem, dashboard/transações, bens/contas, orçamentos/relatórios, metas/categorias e configurações. Compartilham navegação escura, título e ação principal no topo, indicadores e listagem abaixo. Contas precisa vir antes de lançamentos: conta_id é obrigatório. A seguir implementar os cadastros auxiliares, lançamentos e leituras derivadas. Reutilizar tema MUI, acesso por teclado, foco visível, feedback de erro e estados vazios. Testar paginação, dispositivos estreitos, saldos em moedas distintas e exclusão com vínculos.
+
+## Resultado na branch
+
+| Módulo | Create | Read | Update | Delete | Frontend | Backend | Status | Prioridade restante |
+|---|---|---|---|---|---|---|---|---|
+| Contas | Formulário | Lista, saldos, extrato | Edição e ativação | Confirmação e conflito | Integrado | Testado | 🟢 | Revisão |
+| Categorias | API | API | API | API | Pendente | Testado | 🟡 | 1 |
+| Métodos de pagamento | API | API | API | API | Pendente | Testado | 🟡 | 2 |
+| Transações | Transferir pela conta; demais só API | Extrato real; lista geral local | API | API | Parcial | Testado | 🟡 | 3 |
+| Bens | API | API e demonstração | API | API | Parcial | Testado | 🟡 | 4 |
+| Metas | API | API | API | API | Pendente | Testado | 🟡 | 5 |
+| Orçamentos | Ausente | Ausente | A definir | A definir | Pendente | Ausente | 🔴 | 6 |
+
+**1 completo, 5 parciais, 1 inexistente. 6 de 7 precisam de desenvolvimento; conclusão por módulo: 14,3%.** O login real desbloqueia Contas. Cada tela que ainda usa dados locais identifica a demonstração. A implementação de Transações deve mapear UUIDs, transferências, status sem acento, strings decimais e paginação do servidor antes de substituir a lista local. Dashboard e relatórios exigem agregação por período e moeda; somar só a primeira página distorceria os indicadores.
+
+## Experimentos e decisões
+- A URL /contas abria em branco. Implementados os cartões, indicadores, extrato e transferência da página 2 do PDF. Em celular os cartões passam a uma coluna. Saldos de moedas diferentes aparecem separados, com aritmética em centavos.
+- Mantidos tema MUI, barra lateral escura, cores de ação e hierarquia do produto. O cadastro e a edição usam diálogos com foco gerenciado, validação, bloqueio durante envio e erro retornado pela API. Exclusão exige confirmação; a conta com histórico pode ser inativada.
+- Descartado o campo de período que só exibia texto. Um intervalo com limites inclusivos filtra os dados; limpar filtros restaura a lista. O diálogo de detalhe fecha com Escape e devolve o foco à ação.
+- No login estreito, os dois painéis comprimiam o formulário. A ilustração agora aparece a partir de 600 px. Navegação inclui salto ao conteúdo e indicação de página indisponível. Gráficos e transições respeitam movimento reduzido.
+- Omitidos limite de cartão, instituição financeira e comparação mensal em Contas porque o contrato não fornece esses dados. O gráfico consolidado de movimentações permanece pendente. A tela mostra saldo e extrato verificáveis; não simula valores para preencher o layout.
+- Skills usadas: Impeccable para contexto existente e estados de interação, UI UX Pro Max para critérios de foco e movimento, Web Design Guidelines para rótulos e navegação. Frontend Design e Design Taste Frontend ficam como alternativas para uma reformulação visual; aqui o PDF e o tema existente definem a direção. As demais skills disponíveis atendem instalação/autoria, documentação OpenAI, ilustração e mídia, Pages, Sites, plugins, visualizações e pets. Nenhuma delas é necessária para a camada financeira. A validação usa os testes nativos do projeto e o navegador do ambiente.
+
+## Evidências e limites
+- 5/5 testes de validação e 17/17 de integração HTTP em PostgreSQL 18 local isolado, com quatro migrações aplicadas. O Compose especifica PostgreSQL 17; a pilha Docker não foi exercitada. O teste de integração usa schema exclusivo.
+- Lint partia de dois erros no contexto de autenticação. ESLint e build de produção (tsc + Vite) passaram no resultado final. Permanece o aviso de tamanho do chunk de gráficos (cerca de 547 kB antes de gzip).
+- Navegador: cadastro, criação, renomeação, desativação/reativação, recarga, logout e login, exclusão de conta temporária, exclusão bloqueada de conta com movimentação. Uma transferência de 10,25 de Carteira para Reserva preservou o total de 2.410,50; o extrato da origem mostrou −10,25. As contas usadas foram criadas no banco isolado.
+- Busca por “Uber” e intervalo de um dia em 31/05/2025 retornaram um registro cada na demonstração. Limpeza dos filtros e retorno de foco após Escape verificados. Em Contas, captura de 1440×900 e 390×844; nenhum transbordamento horizontal da página no celular. Houve erros transitórios de HMR enquanto os arquivos eram editados e HTTP 409 esperado na exclusão com vínculo. Não houve auditoria integral de leitor de tela, carga, segurança ou Lighthouse.
+- [Antes da rota Contas](evidencias/contas-antes.png) · [Depois em desktop](evidencias/contas-desktop.png) · [Depois em celular](evidencias/contas-mobile.png).
+- Antes da integração, revisar a sessão por aba e o primeiro destino após login (/contas), validar o proxy com o ambiente de homologação e decidir as regras de orçamento e limite de cartão. Planejar teste de navegador repetível dos fluxos críticos. O CRUD de Contas está funcional; o produto como um todo ainda depende dos módulos acima.
