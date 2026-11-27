@@ -1,54 +1,54 @@
-import { Box, Divider, Typography } from "@mui/material";
-import type { Transacao } from "../../../services/transacoes/transacoes.types";
-import { formatarMoeda } from "../../../utils/financeiro";
-import { CardHeading, DashboardCard } from "../styles";
+import { Box, Typography } from "@mui/material";
+import { Tendencia } from "../../../components/Pagina";
+import { Cartao, TituloCartao } from "../../../components/Pagina.styles";
+import { cores } from "../../../theme/theme";
+import { variacao, type resumir } from "../../../utils/calculos";
+import { formatarCentavos, formatarMoeda, formatarPercentual } from "../../../utils/formato";
 
-interface IndicatorsProps {
-  receitas: number;
-  despesas: number;
-  dias: number;
-  maiorDespesa?: Transacao;
-}
+type Resumo = ReturnType<typeof resumir> & { dias: number };
 
-export default function Indicators({ receitas, despesas, dias, maiorDespesa }: IndicatorsProps) {
-  const taxaPoupanca = receitas > 0 ? (receitas - despesas) / receitas * 100 : null;
+const taxaPoupanca = ({ receitas, saldo }: Resumo) => (receitas > 0 ? (saldo / receitas) * 100 : null);
+
+export default function Indicators({ atual, anterior }: { atual: Resumo; anterior: Resumo }) {
+  const taxa = taxaPoupanca(atual);
+  const taxaAnterior = taxaPoupanca(anterior);
+  const pontos = taxa !== null && taxaAnterior !== null ? taxa - taxaAnterior : null;
+  const gasto = variacao(atual.despesas / atual.dias, anterior.despesas / anterior.dias);
+  const receita = variacao(atual.receitas / atual.dias, anterior.receitas / anterior.dias);
+  const tendencia = (valor: number | null, texto: (valor: number) => string) =>
+    valor === null ? null : <Tendencia valor={valor}>{texto(valor)}</Tendencia>;
+
   const indicadores = [
     {
-      label: "Taxa de poupança",
-      value: taxaPoupanca === null ? "—" : `${taxaPoupanca.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`,
-      detail: "das receitas do período",
-      color: taxaPoupanca !== null && taxaPoupanca >= 0 ? "#21A366" : "text.primary",
+      rotulo: "Taxa de poupança",
+      valor: taxa === null ? "—" : formatarPercentual(taxa),
+      lado: tendencia(pontos, (v) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} p.p.`),
     },
-    { label: "Gastos médios diários", value: formatarMoeda(despesas / dias), detail: `${dias} dias no período` },
-    { label: "Maior despesa", value: maiorDespesa ? formatarMoeda(maiorDespesa.valor) : "—", detail: maiorDespesa?.descricao ?? "Nenhuma despesa no período" },
-    { label: "Receita média diária", value: formatarMoeda(receitas / dias), detail: "no período selecionado" },
+    { rotulo: "Gastos médios diários", valor: formatarCentavos(atual.despesas / atual.dias), lado: tendencia(gasto, formatarPercentual) },
+    {
+      rotulo: "Maior despesa",
+      valor: atual.maiorDespesa?.descricao ?? "—",
+      lado: atual.maiorDespesa
+        ? <Box component="span" sx={{ color: cores.texto }}>{formatarMoeda(atual.maiorDespesa.valor)}</Box>
+        : null,
+    },
+    { rotulo: "Receita média diária", valor: formatarCentavos(atual.receitas / atual.dias), lado: tendencia(receita, formatarPercentual) },
   ];
 
   return (
-    <DashboardCard>
-      <CardHeading>
-        <Typography component="h2">Indicadores</Typography>
-      </CardHeading>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "1fr" }, columnGap: 3 }}>
-        {indicadores.map((indicador, index) => (
-          <Box key={indicador.label} sx={{ minWidth: 0 }}>
-            {index > 0 && <Divider sx={{ borderColor: "#F2F4F7", display: { xs: "block", sm: index > 1 ? "block" : "none", xl: "block" } }} />}
-            <Box sx={{ py: 1.2 }}>
-              <Typography sx={{ fontSize: 11, color: "text.secondary", mb: 0.6 }}>
-                {indicador.label}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 1, flexWrap: "wrap" }}>
-                <Typography sx={{ fontSize: 14, fontWeight: 600, color: indicador.color ?? "text.primary" }}>
-                  {indicador.value}
-                </Typography>
-                <Typography sx={{ fontSize: 10, color: "text.secondary" }}>
-                  {indicador.detail}
-                </Typography>
-              </Box>
+    <Cartao>
+      <TituloCartao>Indicadores</TituloCartao>
+      <Box sx={{ mt: 1.5 }}>
+        {indicadores.map((item) => (
+          <Box key={item.rotulo} sx={{ display: "flex", justifyContent: "space-between", gap: 1, py: "13px", borderBottom: `1px solid ${cores.bordaSuave}`, "&:last-of-type": { borderBottom: 0, pb: 0 } }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: 14, color: "text.secondary", lineHeight: 1.4 }}>{item.rotulo}</Typography>
+              <Typography noWrap sx={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>{item.valor}</Typography>
             </Box>
+            <Typography component="div" sx={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>{item.lado}</Typography>
           </Box>
         ))}
       </Box>
-    </DashboardCard>
+    </Cartao>
   );
 }

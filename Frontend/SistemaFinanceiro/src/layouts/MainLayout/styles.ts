@@ -1,17 +1,12 @@
-import { Box, styled } from "@mui/material";
+import { styled } from "@mui/material";
+import { cores } from "../../theme/theme";
 import { DRAWER_WIDTH, MOBILE_DRAWER_WIDTH } from "./components/Sidebar/styles";
 
-export const Content = styled(Box)(({ theme }) => ({
+export const Content = styled("main")(({ theme }) => ({
   marginLeft: DRAWER_WIDTH,
-  padding: theme.spacing(3),
   minHeight: "100vh",
-  backgroundColor: "#f8fafc",
   minWidth: 0,
-  [theme.breakpoints.down("md")]: {
-    marginLeft: MOBILE_DRAWER_WIDTH,
-    padding: theme.spacing(2),
-  },
-  [theme.breakpoints.down("sm")]: {
-    padding: theme.spacing(1.5),
-  },
+  backgroundColor: cores.fundo,
+  [theme.breakpoints.down("md")]: { marginLeft: MOBILE_DRAWER_WIDTH },
+  "@media print": { marginLeft: 0 },
 }));

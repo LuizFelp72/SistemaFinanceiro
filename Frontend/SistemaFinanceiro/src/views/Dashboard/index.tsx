@@ -1,122 +1,112 @@
-import { useMemo, useState } from "react";
-import { Box, MenuItem, TextField, Typography } from "@mui/material";
-import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import ArrowCircleDownOutlinedIcon from "@mui/icons-material/ArrowCircleDownOutlined";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
-import CottageOutlinedIcon from "@mui/icons-material/CottageOutlined";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import { saldosDashboardMock } from "../../services/dashboard/dashboard.mock";
-import { listarTransacoes } from "../../services/transacoes/transacoes.service";
-import { formatarData } from "../../utils/financeiro";
+import { useState } from "react";
+import SyncRoundedIcon from "@mui/icons-material/SyncRounded";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import TrendingDownRoundedIcon from "@mui/icons-material/TrendingDownRounded";
+import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import { Carregando, CartaoResumo, Pagina, Tendencia } from "../../components/Pagina";
+import { GradeResumo } from "../../components/Pagina.styles";
+import { Filtro } from "../../components/Controles";
+import { SeletorPeriodo } from "../../components/Periodo";
+import { useDados } from "../../hooks/useDados";
+import { bens, categorias, contas, historicoBens, transacoes } from "../../services";
+import { cores } from "../../theme/theme";
+import { concluidas, noPeriodo, patrimonioEm, resumir, saldoEm, variacao, type Periodo } from "../../utils/calculos";
+import { limitesDoMes, quantidadeDias, somarDias, somarMeses } from "../../utils/datas";
+import { formatarCentavos, formatarPercentual, HOJE } from "../../utils/formato";
 import CategoryDistribution from "./components/CategoryDistribution";
 import FinancialEvolution from "./components/FinancialEvolution";
 import IncomeExpenses from "./components/IncomeExpenses";
 import Indicators from "./components/Indicators";
+import Notifications from "./components/Notifications";
 import RecentTransactions from "./components/RecentTransactions";
-import SummaryCard from "./components/SummaryCard";
-import { dataISO, dataLocal, limitesDoMes, montarEvolucao, quantidadeDias, resumirTransacoes } from "./dashboard.utils";
-import { ChartGrid, DashboardContainer, DetailGrid, SummaryGrid } from "./styles";
+import { ChartGrid, DetailGrid } from "./styles";
+
+const MES = HOJE.slice(0, 7);
+const ATALHOS: Record<string, { rotulo: string; periodo: Periodo }> = {
+  mes: { rotulo: "Este mês", periodo: limitesDoMes(MES) },
+  anterior: { rotulo: "Mês passado", periodo: limitesDoMes(somarMeses(MES, -1)) },
+  trimestre: { rotulo: "Últimos 3 meses", periodo: { inicio: `${somarMeses(MES, -2)}-01`, fim: limitesDoMes(MES).fim } },
+  ano: { rotulo: "Este ano", periodo: { inicio: `${MES.slice(0, 4)}-01-01`, fim: HOJE } },
+};
+
+/** Período de comparação: o mês anterior para meses fechados, senão o mesmo número de dias antes. */
+function periodoAnterior({ inicio, fim }: Periodo): Periodo {
+  const mes = limitesDoMes(inicio.slice(0, 7));
+  if (inicio === mes.inicio && fim === mes.fim) return limitesDoMes(somarMeses(inicio.slice(0, 7), -1));
+  return { inicio: somarDias(inicio, -quantidadeDias(inicio, fim)), fim: somarDias(inicio, -1) };
+}
+
+const TITULO = "Dashboard";
+const SUBTITULO = "Visão geral da sua vida financeira";
 
 export default function Dashboard() {
-  const transacoes = useMemo(() => listarTransacoes(), []);
-  const meses = [...new Set(transacoes.map((transacao) => transacao.data.slice(0, 7)))].sort().reverse();
-  const mesInicial = meses[0] ?? dataISO(new Date()).slice(0, 7);
-  const [periodo, setPeriodo] = useState(mesInicial);
-  const limites = periodo === "todos"
-    ? { inicio: limitesDoMes(meses.at(-1) ?? mesInicial).inicio, fim: limitesDoMes(mesInicial).fim }
-    : limitesDoMes(periodo);
-  const noPeriodo = transacoes.filter((transacao) => transacao.data >= limites.inicio && transacao.data <= limites.fim);
-  const consideradas = transacoes.filter((transacao) => transacao.status === "concluída");
-  const movimentos = consideradas.filter((transacao) => transacao.data >= limites.inicio && transacao.data <= limites.fim);
-  const resumo = resumirTransacoes(movimentos);
-  const anteriores = resumirTransacoes(consideradas.filter((transacao) => transacao.data < limites.inicio));
-  const saldoInicial = saldosDashboardMock.saldoInicial + anteriores.saldo;
-  const saldoTotal = saldoInicial + resumo.saldo;
-  const pontos = montarEvolucao(movimentos, limites.inicio, limites.fim, saldoInicial);
-  const descricaoTotais = "Transações concluídas no período";
+  const [periodo, setPeriodo] = useState<Periodo>(ATALHOS.mes.periodo);
+  const { dados, erro, recarregar } = useDados(() => Promise.all([
+    transacoes.listarTodos(), contas.listarTodos(), categorias.listarTodos(), bens.listarTodos(), historicoBens(),
+  ]));
+
+  if (!dados) return <Carregando titulo={TITULO} subtitulo={SUBTITULO} erro={erro} repetir={recarregar} />;
+  const [lancamentos, listaContas, listaCategorias, listaBens, avaliacoes] = dados;
+
+  const anterior = periodoAnterior(periodo);
+  const resumo = resumir(concluidas(noPeriodo(lancamentos, periodo)));
+  const resumoAnterior = resumir(concluidas(noPeriodo(lancamentos, anterior)));
+  const vespera = somarDias(periodo.inicio, -1);
+  const saldo = saldoEm(listaContas, lancamentos, periodo.fim);
+  const patrimonio = (data: string) => patrimonioEm(listaContas, lancamentos, listaBens, avaliacoes, data);
+  const patrimonioFinal = patrimonio(periodo.fim);
+
+  const comparacao = (valor: number | null) => valor === null
+    ? "Sem base de comparação"
+    : <Tendencia valor={valor}>{formatarPercentual(valor)} vs. mês anterior</Tendencia>;
+
+  const atalho = Object.keys(ATALHOS).find((chave) =>
+    ATALHOS[chave].periodo.inicio === periodo.inicio && ATALHOS[chave].periodo.fim === periodo.fim) ?? "personalizado";
+
+  const cartoes = [
+    { titulo: "Saldo total", valor: saldo, delta: variacao(saldo, saldoEm(listaContas, lancamentos, vespera)), icone: { Icone: SyncRoundedIcon, cor: cores.azul, fundo: cores.primariaSuave } },
+    { titulo: "Receitas", valor: resumo.receitas, delta: variacao(resumo.receitas, resumoAnterior.receitas), icone: { Icone: TrendingUpRoundedIcon, cor: cores.verde, fundo: cores.verdeSuave } },
+    { titulo: "Despesas", valor: resumo.despesas, delta: variacao(resumo.despesas, resumoAnterior.despesas), icone: { Icone: TrendingDownRoundedIcon, cor: cores.vermelho, fundo: cores.vermelhoSuave } },
+    { titulo: "Patrimônio líquido", valor: patrimonioFinal, delta: variacao(patrimonioFinal, patrimonio(vespera)), icone: { Icone: HomeOutlinedIcon, cor: cores.roxo, fundo: cores.roxoSuave } },
+  ];
 
   return (
-    <DashboardContainer>
-      <Box component="header" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 0.5 }}>
-        <Box>
-          <Typography component="h1" variant="h5" sx={{ fontSize: 23, letterSpacing: "-.5px", mb: 0.5 }}>
-            Dashboard
-          </Typography>
-          <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
-            Visão geral da sua vida financeira
-          </Typography>
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.5 }}>
-          <TextField
-            select
-            size="small"
-            label="Período"
-            value={periodo}
-            onChange={(event) => setPeriodo(event.target.value)}
-            sx={{ minWidth: 175, "& .MuiInputBase-root": { fontSize: 12, bgcolor: "#fff" } }}
-          >
-            {meses.map((mes) => (
-              <MenuItem key={mes} value={mes} sx={{ fontSize: 13, textTransform: "capitalize" }}>
-                {dataLocal(`${mes}-01`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-              </MenuItem>
-            ))}
-            {meses.length === 0 && <MenuItem value={mesInicial}>Mês atual</MenuItem>}
-            <MenuItem value="todos" sx={{ fontSize: 13 }}>Todo o período</MenuItem>
-          </TextField>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "text.secondary" }}>
-            <CalendarMonthOutlinedIcon sx={{ fontSize: 16 }} />
-            <Typography sx={{ fontSize: 11 }}>
-              {formatarData(limites.inicio)} — {formatarData(limites.fim)}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      <SummaryGrid>
-        <SummaryCard
-          title="Saldo total"
-          value={saldoTotal}
-          description="Saldo inicial + movimentações concluídas"
-          icon={AccountBalanceWalletOutlinedIcon}
-          color="#7057F0"
-          background="#F3F0FF"
+    <Pagina
+      titulo={TITULO}
+      subtitulo={SUBTITULO}
+      acoes={<>
+        <Filtro
+          rotulo="Atalho de período"
+          valor={atalho}
+          onChange={(chave) => { if (ATALHOS[chave]) setPeriodo(ATALHOS[chave].periodo); }}
+          opcoes={[
+            ...Object.entries(ATALHOS).map(([valor, item]) => ({ valor, rotulo: item.rotulo })),
+            ...(atalho === "personalizado" ? [{ valor: "personalizado", rotulo: "Personalizado" }] : []),
+          ]}
         />
-        <SummaryCard
-          title="Receitas"
-          value={resumo.receitas}
-          description={descricaoTotais}
-          icon={ArrowCircleDownOutlinedIcon}
-          color="#21A366"
-          background="#EDFAF3"
-        />
-        <SummaryCard
-          title="Despesas"
-          value={resumo.despesas}
-          description={descricaoTotais}
-          icon={DeleteOutlineOutlinedIcon}
-          color="#E5535E"
-          background="#FFF0F1"
-        />
-        <SummaryCard
-          title="Patrimônio líquido"
-          value={saldoTotal + saldosDashboardMock.patrimonioForaDasContas}
-          description="Saldo total + patrimônio fora das contas"
-          icon={CottageOutlinedIcon}
-          color="#7057F0"
-          background="#F3F0FF"
-        />
-      </SummaryGrid>
+        <SeletorPeriodo valor={periodo} onChange={setPeriodo} seta />
+        <Notifications />
+      </>}
+    >
+      <GradeResumo>
+        {cartoes.map((cartao) => (
+          <CartaoResumo key={cartao.titulo} titulo={cartao.titulo} valor={formatarCentavos(cartao.valor)} detalhe={comparacao(cartao.delta)} icone={cartao.icone} />
+        ))}
+      </GradeResumo>
 
       <ChartGrid>
-        <FinancialEvolution pontos={pontos} empty={movimentos.length === 0} />
+        <FinancialEvolution periodo={periodo} patrimonio={patrimonio} />
         <IncomeExpenses receitas={resumo.receitas} despesas={resumo.despesas} />
-        <Indicators receitas={resumo.receitas} despesas={resumo.despesas} dias={quantidadeDias(limites.inicio, limites.fim)} maiorDespesa={resumo.maiorDespesa} />
+        <Indicators
+          atual={{ ...resumo, dias: quantidadeDias(periodo.inicio, periodo.fim) }}
+          anterior={{ ...resumoAnterior, dias: quantidadeDias(anterior.inicio, anterior.fim) }}
+        />
       </ChartGrid>
 
       <DetailGrid>
-        <RecentTransactions transacoes={noPeriodo} />
-        <CategoryDistribution categorias={resumo.categorias} />
+        <RecentTransactions transacoes={noPeriodo(lancamentos, periodo)} contas={listaContas} categorias={listaCategorias} />
+        <CategoryDistribution totais={resumo.porCategoria} categorias={listaCategorias} />
       </DetailGrid>
-    </DashboardContainer>
+    </Pagina>
   );
 }
