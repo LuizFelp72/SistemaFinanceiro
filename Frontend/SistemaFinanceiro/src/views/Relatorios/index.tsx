@@ -1,3 +1,4 @@
+import { baixarCsv } from "../../utils/csv";
 import { useState } from "react";
 import { Box, Button, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import FinanceData from "../../components/FinanceData";
@@ -20,8 +21,7 @@ function Report({db}:{db:Ledger}) {
   const money=(c:number)=>formatarMoeda(c/100,currency);
   function csv(){
     const lines=[["Mês","Receitas","Despesas","Saldo","Moeda"],...months.map(m=>[m.name,...[m.income,m.expense,m.income-m.expense].map(n=>(n/100).toFixed(2).replace(".",",")),currency])];
-    const url=URL.createObjectURL(new Blob(["\uFEFF"+lines.map(l=>l.join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"}));
-    const a=document.createElement("a");a.href=url;a.download=`relatorio-${year}-${currency}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    baixarCsv(`relatorio-${year}-${currency}.csv`,lines);
   }
   return <Stack spacing={3} className="financial-report"><PageHeader title="Relatórios" subtitle="Resultado anual por moeda e mês">
     <Stack direction="row" spacing={1} className="no-print"><Button variant="outlined" onClick={()=>window.print()}>Imprimir / PDF</Button><Button variant="contained" onClick={csv}>Exportar CSV</Button></Stack></PageHeader>
