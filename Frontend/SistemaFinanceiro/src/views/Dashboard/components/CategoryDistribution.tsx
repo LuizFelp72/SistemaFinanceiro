@@ -1,57 +1,47 @@
-import { Box, Typography } from "@mui/material";
-import { CORES_CATEGORIA, formatarMoeda } from "../../../utils/financeiro";
-import { CardHeading, DashboardCard, LegendRow } from "../styles";
+import { Box } from "@mui/material";
 import Chart from "../../../components/Chart";
+import { opcaoRosca, type Fatia } from "../../../components/Chart/opcoes";
+import { Cartao, TituloCartao } from "../../../components/Pagina.styles";
+import type { Categoria } from "../../../services/api/types";
+import { cores } from "../../../theme/theme";
+import { formatarCentavos, formatarPercentual } from "../../../utils/formato";
+import { Ponto } from "../styles";
 
-export interface CategoryTotal {
-  name: string;
-  value: number;
+/** Cinco maiores categorias; as demais são somadas em "Outros". */
+function agrupar(totais: { categoriaId: string; valor: number }[], categorias: Categoria[]): Fatia[] {
+  const fatias = totais.map(({ categoriaId, valor }) => {
+    const categoria = categorias.find((c) => c.id === categoriaId);
+    return { name: categoria?.nome ?? "Outros", value: valor / 100, cor: categoria?.cor ?? cores.cinza };
+  });
+  const principais = fatias.filter((f) => f.name !== "Outros").slice(0, 5);
+  const resto = fatias.filter((f) => !principais.includes(f)).reduce((soma, f) => soma + f.value, 0);
+  return resto > 0 ? [...principais, { name: "Outros", value: resto, cor: cores.cinza }] : principais;
 }
 
-export default function CategoryDistribution({ categorias }: { categorias: CategoryTotal[] }) {
-  const total = categorias.reduce((soma, categoria) => soma + categoria.value, 0);
-  const dados = categorias.map((categoria) => ({
-    ...categoria,
-    itemStyle: { color: (CORES_CATEGORIA[categoria.name] ?? CORES_CATEGORIA.Outros).cor },
-  }));
+export default function CategoryDistribution({ totais, categorias }: {
+  totais: { categoriaId: string; valor: number }[]; categorias: Categoria[];
+}) {
+  const fatias = agrupar(totais, categorias);
+  const total = fatias.reduce((soma, f) => soma + f.value, 0);
 
   return (
-    <DashboardCard>
-      <CardHeading>
-        <Typography component="h2">Distribuição por categoria</Typography>
-        <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Despesas do período</Typography>
-      </CardHeading>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "minmax(140px, .9fr) minmax(0, 1fr)" }, alignItems: "center", gap: 2 }}>
+    <Cartao>
+      <TituloCartao>Distribuição por categoria</TituloCartao>
+      <Box sx={{ my: 1.75 }}>
         <Chart
-          height={224}
+          height={124}
           empty={total === 0}
-          label={`Despesas por categoria: ${categorias.map((item) => `${item.name}, ${formatarMoeda(item.value)}`).join("; ")}.`}
-          option={{
-            tooltip: { trigger: "item", renderMode: "richText", valueFormatter: (value) => formatarMoeda(Number(value)) },
-            series: [{
-              type: "pie",
-              radius: ["56%", "80%"],
-              label: { show: false },
-              labelLine: { show: false },
-              itemStyle: { borderColor: "#fff", borderWidth: 2 },
-              data: dados,
-            }],
-          }}
+          label={`Despesas por categoria: ${fatias.map((f) => `${f.name}, ${formatarCentavos(f.value * 100)}`).join("; ")}.`}
+          option={opcaoRosca(fatias, ["65%", "100%"])}
         />
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.75 }}>
-          {dados.map((categoria) => (
-            <LegendRow key={categoria.name}>
-              <Box className="legend-dot" sx={{ bgcolor: categoria.itemStyle.color }} />
-              <Typography component="span" sx={{ flex: 1, fontSize: 12 }}>
-                {categoria.name}
-              </Typography>
-              <Typography component="span" sx={{ fontSize: 12, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
-                {(categoria.value / total * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
-              </Typography>
-            </LegendRow>
-          ))}
-        </Box>
       </Box>
-    </DashboardCard>
+      {fatias.map((fatia) => (
+        <Box key={fatia.name} sx={{ display: "flex", alignItems: "center", gap: 1, py: "2px", fontSize: 14 }}>
+          <Ponto style={{ backgroundColor: fatia.cor }} />
+          <Box component="span" sx={{ flex: 1 }}>{fatia.name}</Box>
+          <Box component="span" sx={{ color: "text.secondary" }}>{formatarPercentual((fatia.value / total) * 100)}</Box>
+        </Box>
+      ))}
+    </Cartao>
   );
 }

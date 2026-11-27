@@ -1,40 +1,15 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
-
-interface AuthContextData {
-  isAuthenticated: boolean;
-  login: (usernameOrEmail: string, password: string) => boolean;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+import { useState, type ReactNode } from "react";
+import { entrar } from "../services/auth";
+import { AuthContext } from "./context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // Lido já na primeira renderização, para que recarregar a página não leve ao login.
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem("token")));
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) setIsAuthenticated(true);
-  }, []);
-
-  function login(usernameOrEmail: string, password: string): boolean {
-    // Extrai a parte antes do @ (se tiver @) ou usa o valor direto
-    const usuario = usernameOrEmail.includes("@")
-      ? usernameOrEmail.split("@")[0]
-      : usernameOrEmail;
-
-    // Validação fake, sem API — troque depois pela chamada real
-    if (usuario === "admin" && password === "123456") {
-      localStorage.setItem("token", "fake-token");
-      setIsAuthenticated(true);
-      return true;
-    }
-    return false;
+  function login(email: string, password: string) {
+    const { token } = entrar(email, password);
+    localStorage.setItem("token", token);
+    setIsAuthenticated(true);
   }
 
   function logout() {
@@ -47,8 +22,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }

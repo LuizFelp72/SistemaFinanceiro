@@ -8,6 +8,12 @@ const Login = lazy(() => import("../views/Login"));
 const Dashboard = lazy(() => import("../views/Dashboard"));
 const Transacoes = lazy(() => import("../views/Transacoes"));
 const BensPatrimonio = lazy(() => import("../views/BensPatrimonio"));
+const Contas = lazy(() => import("../views/Contas"));
+const Orcamentos = lazy(() => import("../views/Orcamentos"));
+const Relatorios = lazy(() => import("../views/Relatorios"));
+const Metas = lazy(() => import("../views/Metas"));
+const Categorias = lazy(() => import("../views/Categorias"));
+const Configuracoes = lazy(() => import("../views/Configuracoes"));
 
 function Loading() {
   return (
@@ -36,6 +42,12 @@ function AppRoutes() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="transacoes" element={<Transacoes />} />
             <Route path="bens-patrimonio" element={<BensPatrimonio />} />
+            <Route path="contas" element={<Contas />} />
+            <Route path="orcamentos" element={<Orcamentos />} />
+            <Route path="relatorios" element={<Relatorios />} />
+            <Route path="metas" element={<Metas />} />
+            <Route path="categorias" element={<Categorias />} />
+            <Route path="configuracoes" element={<Configuracoes />} />
           </Route>
         </Route>
       </Routes>

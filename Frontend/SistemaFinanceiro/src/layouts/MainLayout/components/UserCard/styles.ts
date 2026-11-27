@@ -1,19 +1,19 @@
 import { Box, styled } from "@mui/material";
+import { cores } from "../../../../theme/theme";
 
 export const CardContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
-  gap: theme.spacing(1.5),
-  padding: theme.spacing(2),
-  margin: theme.spacing(1),
-  borderRadius: theme.shape.borderRadius,
-  cursor: "pointer",
-  "&:hover": {
-    backgroundColor: "rgba(255,255,255,0.05)",
-  },
+  gap: 10,
+  margin: "8px 5px 15px",
+  padding: "8px 10px",
+  borderRadius: 12,
+  color: cores.menuTexto,
+  textDecoration: "none",
+  "&:hover": { backgroundColor: "rgba(255,255,255,.05)" },
   [theme.breakpoints.down("md")]: {
     justifyContent: "center",
-    padding: theme.spacing(1),
-    "& > .MuiBox-root, & > .MuiSvgIcon-root": { display: "none" },
+    padding: 8,
+    "& .usuario-texto, & .usuario-seta": { display: "none" },
   },
 }));

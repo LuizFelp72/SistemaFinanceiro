@@ -1,10 +1,10 @@
-import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import CreditCardOutlinedIcon from "@mui/icons-material/CreditCardOutlined";
-import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
-import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import TrackChangesOutlinedIcon from "@mui/icons-material/TrackChangesOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { type SvgIconComponent } from "@mui/icons-material";
@@ -16,21 +16,13 @@ export interface MenuItem {
 }
 
 export const menuItems: MenuItem[] = [
-  { label: "Dashboard", path: "/", icon: DashboardOutlinedIcon },
+  { label: "Dashboard", path: "/", icon: GridViewOutlinedIcon },
   { label: "Transações", path: "/transacoes", icon: SwapHorizOutlinedIcon },
-  {
-    label: "Bens / Patrimônio",
-    path: "/bens-patrimonio",
-    icon: AccountBalanceWalletOutlinedIcon,
-  },
-  { label: "Contas", path: "/contas", icon: CreditCardOutlinedIcon },
-  { label: "Orçamentos", path: "/orcamentos", icon: CalendarTodayOutlinedIcon },
-  { label: "Relatórios", path: "/relatorios", icon: AssessmentOutlinedIcon },
-  { label: "Metas", path: "/metas", icon: FlagOutlinedIcon },
+  { label: "Bens / Patrimônio", path: "/bens-patrimonio", icon: AccountBalanceOutlinedIcon },
+  { label: "Contas", path: "/contas", icon: AccountBalanceWalletOutlinedIcon },
+  { label: "Orçamentos", path: "/orcamentos", icon: BarChartOutlinedIcon },
+  { label: "Relatórios", path: "/relatorios", icon: DescriptionOutlinedIcon },
+  { label: "Metas", path: "/metas", icon: TrackChangesOutlinedIcon },
   { label: "Categorias", path: "/categorias", icon: LocalOfferOutlinedIcon },
-  {
-    label: "Configurações",
-    path: "/configuracoes",
-    icon: SettingsOutlinedIcon,
-  },
+  { label: "Configurações", path: "/configuracoes", icon: SettingsOutlinedIcon },
 ];
