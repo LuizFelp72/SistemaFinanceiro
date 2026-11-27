@@ -1,3 +1,4 @@
+import { centavos } from "../Contas/accounts";
 import { useMemo, useState } from "react";
 import { Box, MenuItem, TextField, Typography } from "@mui/material";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
@@ -22,8 +23,8 @@ export default function Dashboard() {
 }
 function Resumo({db}:{db:Ledger}) {
   const transacoes = useMemo(() => presentTransactions(db).flatMap(t => t.moeda === "BRL" && t.tipo !== "transferencia" ? [{...t, tipo:t.tipo}] : []),[db]);
-  const inicial = db.accounts.filter(a => a.moeda === "BRL").reduce((n,a)=>n+Number(a.saldo_inicial),0);
-  const patrimonio = db.assets.reduce((n,a)=>n+Number(a.valor_atual),0);
+  const inicial = db.accounts.filter(a => a.moeda === "BRL").reduce((n,a)=>n+centavos(a.saldo_inicial),0n);
+  const patrimonio = db.assets.reduce((n,a)=>n+centavos(a.valor_atual),0n);
   const meses = [...new Set(transacoes.map((transacao) => transacao.data.slice(0, 7)))].sort().reverse();
   const mesInicial = meses[0] ?? dataISO(new Date()).slice(0, 7);
   const [periodo, setPeriodo] = useState(mesInicial);
@@ -35,8 +36,8 @@ function Resumo({db}:{db:Ledger}) {
   const movimentos = consideradas.filter((transacao) => transacao.data >= limites.inicio && transacao.data <= limites.fim);
   const resumo = resumirTransacoes(movimentos);
   const anteriores = resumirTransacoes(consideradas.filter((transacao) => transacao.data < limites.inicio));
-  const saldoInicial = inicial + anteriores.saldo;
-  const saldoTotal = saldoInicial + resumo.saldo;
+  const saldoInicial = inicial + anteriores.saldoCentavos;
+  const saldoTotal = saldoInicial + resumo.saldoCentavos;
   const pontos = montarEvolucao(movimentos, limites.inicio, limites.fim, saldoInicial);
   const descricaoTotais = "Transações concluídas no período";
 

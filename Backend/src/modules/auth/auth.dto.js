@@ -41,4 +41,10 @@ function password(body) {
   if (typeof body.senha_atual !== "string" || !body.senha_atual || Buffer.byteLength(body.senha_atual) > 72) v.invalid("Informe sua senha atual.");
   return { senha_atual: body.senha_atual, nova_senha: newPassword(body.nova_senha) };
 }
-module.exports = { register, login, profile, password };
+function forgot(body) { v.object(body, ["email"], false); return { email: email(body.email) }; }
+function reset(body) {
+  v.object(body, ["token","nova_senha"], false);
+  if (typeof body.token !== "string" || !/^[a-f0-9]{64}$/.test(body.token)) v.invalid("Link inválido.");
+  return { token: body.token, nova_senha: newPassword(body.nova_senha) };
+}
+module.exports = { register, login, profile, password, forgot, reset };

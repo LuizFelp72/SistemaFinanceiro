@@ -1,3 +1,4 @@
+import { centavos } from "../Contas/accounts";
 import type { Transacao } from "../../services/transacoes/transacoes.types";
 
 export type Agrupamento = "diario" | "semanal" | "mensal";
@@ -8,17 +9,18 @@ export interface PontoEvolucao {
 }
 
 export function resumirTransacoes(transacoes: Transacao[]) {
-  let receitas = 0;
-  let despesas = 0;
+  let receitas = 0n;
+  let despesas = 0n;
   let maiorDespesa: Transacao | undefined;
-  const categorias = new Map<string, number>();
+  const categorias = new Map<string, bigint>();
 
   for (const transacao of transacoes) {
+    const valor = centavos((transacao as Transacao & {valorDecimal?:string}).valorDecimal ?? String(transacao.valor));
     if (transacao.tipo === "receita") {
-      receitas += transacao.valor;
+      receitas += valor;
     } else {
-      despesas += transacao.valor;
-      categorias.set(transacao.categoria, (categorias.get(transacao.categoria) ?? 0) + transacao.valor);
+      despesas += valor;
+      categorias.set(transacao.categoria, (categorias.get(transacao.categoria) ?? 0n) + valor);
       if (!maiorDespesa || transacao.valor > maiorDespesa.valor) {
         maiorDespesa = transacao;
       }
@@ -26,11 +28,12 @@ export function resumirTransacoes(transacoes: Transacao[]) {
   }
 
   return {
-    receitas,
-    despesas,
-    saldo: receitas - despesas,
+    receitas: Number(receitas)/100,
+    despesas: Number(despesas)/100,
+    saldo: Number(receitas - despesas)/100,
+    receitasCentavos: receitas, despesasCentavos: despesas, saldoCentavos: receitas-despesas,
     maiorDespesa,
-    categorias: [...categorias].map(([name, value]) => ({ name, value }))
+    categorias: [...categorias].map(([name, value]) => ({ name, value: Number(value)/100 }))
       .sort((a, b) => b.value - a.value),
   };
 }
@@ -64,12 +67,13 @@ export function montarEvolucao(
   transacoes: Transacao[],
   inicio: string,
   fim: string,
-  saldoInicial: number,
+  saldoInicial: bigint,
 ): PontoEvolucao[] {
-  const movimentos = new Map<string, number>();
+  const movimentos = new Map<string, bigint>();
   for (const transacao of transacoes) {
-    const movimento = transacao.tipo === "receita" ? transacao.valor : -transacao.valor;
-    movimentos.set(transacao.data, (movimentos.get(transacao.data) ?? 0) + movimento);
+    const valor = centavos((transacao as Transacao & {valorDecimal?:string}).valorDecimal ?? String(transacao.valor));
+    const movimento = transacao.tipo === "receita" ? valor : -valor;
+    movimentos.set(transacao.data, (movimentos.get(transacao.data) ?? 0n) + movimento);
   }
 
   const pontos: PontoEvolucao[] = [];
@@ -77,8 +81,8 @@ export function montarEvolucao(
   let saldo = saldoInicial;
   while (dataISO(dia) <= fim) {
     const data = dataISO(dia);
-    saldo += movimentos.get(data) ?? 0;
-    pontos.push({ data, saldo: Math.round(saldo * 100) / 100 });
+    saldo += movimentos.get(data) ?? 0n;
+    pontos.push({ data, saldo: Number(saldo) / 100 });
     dia.setDate(dia.getDate() + 1);
   }
   return pontos;

@@ -67,4 +67,33 @@ async function changePassword(userId, {senha_atual,nova_senha}) {
     return { token: signToken(userId,updated.rows[0].session_version) };
   });
 }
-module.exports = { register, login, me, updateProfile, changePassword };
+async function forgotPassword({email}) {
+  const { randomBytes, createHash } = require("node:crypto");
+  if (!process.env.SMTP_URL || !process.env.MAIL_FROM || !process.env.APP_URL) throw new AppError(503,"Recuperação por e-mail indisponível.");
+  const {rows} = await pool.query("SELECT id FROM users WHERE email=$1",[email]);
+  if (!rows.length) return;
+  const token = randomBytes(32).toString("hex");
+  const hash = createHash("sha256").update(token).digest("hex");
+  await pool.query("DELETE FROM password_resets WHERE expires_at < now()");
+  await pool.query("INSERT INTO password_resets(token_hash,usuario_id,expires_at) VALUES($1,$2,now()+interval '30 minutes')",[hash,rows[0].id]);
+  try {
+    await require("nodemailer").createTransport(process.env.SMTP_URL).sendMail({
+      from:process.env.MAIL_FROM,to:email,subject:"Redefinir senha do Nuvra",
+      text:"Para redefinir sua senha, abra o link em até 30 minutos: "+process.env.APP_URL.replace(/\/$/,"")+"/recuperar-senha?token="+token,
+    });
+  } catch {
+    await pool.query("DELETE FROM password_resets WHERE token_hash=$1",[hash]);
+    // Resposta idêntica para evitar revelar se o endereço está cadastrado.
+  }
+}
+async function resetPassword({token,nova_senha}) {
+  const hash = require("node:crypto").createHash("sha256").update(token).digest("hex");
+  return require("../../shared/transaction")(async db => {
+    const {rows} = await db.query("SELECT usuario_id FROM password_resets WHERE token_hash=$1 AND expires_at>now() FOR UPDATE",[hash]);
+    if (!rows.length) throw new AppError(400,"Link inválido ou expirado. Solicite outro.");
+    const passwordHash = await bcrypt.hash(nova_senha,10);
+    await db.query("UPDATE users SET senha_hash=$2,session_version=session_version+1 WHERE id=$1",[rows[0].usuario_id,passwordHash]);
+    await db.query("DELETE FROM password_resets WHERE usuario_id=$1",[rows[0].usuario_id]);
+  });
+}
+module.exports = { register, login, me, updateProfile, changePassword, forgotPassword, resetPassword };

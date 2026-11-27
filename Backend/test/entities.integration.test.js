@@ -397,3 +397,16 @@ test("perfil e troca de senha revogam tokens anteriores", async () => {
   await request("POST","/auth/login",{email,senha:"senha-original-1"},401,null);
   await request("POST","/auth/login",{email,senha:"nova-senha-123"},200,null);
 });
+
+test("recuperação usa token com validade e consumo único", async () => {
+  const {createHash,randomBytes}=require("node:crypto");
+  const tokenValue=randomBytes(32).toString("hex");
+  const hash=createHash("sha256").update(tokenValue).digest("hex");
+  await pool.query("INSERT INTO password_resets(token_hash,usuario_id,expires_at) VALUES($1,$2,now()+interval '30 minutes')",[hash,otherId]);
+  await request("POST","/auth/reset-password",{token:tokenValue,nova_senha:"senha-recuperada-123"},204,null);
+  await request("POST","/auth/reset-password",{token:tokenValue,nova_senha:"senha-recuperada-456"},400,null);
+  await request("GET","/accounts",undefined,401,otherId);
+  const expired=randomBytes(32).toString("hex");
+  await pool.query("INSERT INTO password_resets(token_hash,usuario_id,expires_at) VALUES($1,$2,now()-interval '1 minute')",[createHash("sha256").update(expired).digest("hex"),otherId]);
+  await request("POST","/auth/reset-password",{token:expired,nova_senha:"senha-recuperada-456"},400,null);
+});

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button, Typography } from "@mui/material";
 import { useAuth } from "../../auth/session";
 import LoginForm from "./components/LoginForm";
@@ -24,6 +24,7 @@ export default function Login() {
   return <Container><LeftPanel><FormWrapper>
     <Typography component="h1" variant="h4" gutterBottom>{creating ? "Crie sua conta" : "Faça seu login"}</Typography>
     <LoginForm key={String(creating)} creating={creating} onSubmit={submit} error={error} />
+    <Button component={Link} to="/recuperar-senha">Esqueci minha senha</Button>
     <Button disabled={busy} onClick={() => { setCreating(!creating); setError(""); }}>{creating ? "Voltar ao login" : "Criar cadastro"}</Button>
   </FormWrapper></LeftPanel><LoginIllustration /></Container>;
 }
