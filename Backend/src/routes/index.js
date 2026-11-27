@@ -11,6 +11,7 @@ const modules = [
   require("../modules/categories"),
   require("../modules/assets"),
   require("../modules/goals"),
+  require("../modules/budgets"),
 ];
 
 router.get("/health", async (req, res) => {

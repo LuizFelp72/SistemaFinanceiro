@@ -29,4 +29,16 @@ function login(body) {
   return { email: email(body.email), senha: body.senha };
 }
 
-module.exports = { register, login };
+function profile(body) {
+  v.object(body, ["nome","email"], true);
+  const result = {};
+  if ("nome" in body) result.nome = v.text(body.nome,"nome");
+  if ("email" in body) result.email = email(body.email);
+  return result;
+}
+function password(body) {
+  v.object(body, ["senha_atual","nova_senha"], false);
+  if (typeof body.senha_atual !== "string" || !body.senha_atual || Buffer.byteLength(body.senha_atual) > 72) v.invalid("Informe sua senha atual.");
+  return { senha_atual: body.senha_atual, nova_senha: newPassword(body.nova_senha) };
+}
+module.exports = { register, login, profile, password };

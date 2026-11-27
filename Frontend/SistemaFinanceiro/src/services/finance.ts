@@ -1,9 +1,9 @@
 import { api } from "./api";
 
-export type Resource = "accounts" | "assets" | "categories" | "goals" | "payment-methods" | "transactions";
+export type Resource = "accounts" | "assets" | "categories" | "goals" | "payment-methods" | "transactions" | "budgets";
 export type Row = Record<string, string>;
 export type Ledger = Record<Resource, Row[]>;
-export const emptyLedger = (): Ledger => ({ accounts: [], assets: [], categories: [], goals: [], "payment-methods": [], transactions: [] });
+export const emptyLedger = (): Ledger => ({ accounts: [], assets: [], categories: [], goals: [], "payment-methods": [], transactions: [], budgets: [] });
 
 export async function loadResource(resource: Resource, signal: AbortSignal) {
   const rows: Row[] = [];

@@ -28,5 +28,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
   }
   function logout() { sessionStorage.removeItem(sessionKey); setUser(null); setSessionError(false); }
-  return <Session.Provider value={{ user, loading, sessionError, signIn, logout }}>{children}</Session.Provider>;
+  return <Session.Provider value={{ user, loading, sessionError, signIn, logout, updateUser: setUser }}>{children}</Session.Provider>;
 }
