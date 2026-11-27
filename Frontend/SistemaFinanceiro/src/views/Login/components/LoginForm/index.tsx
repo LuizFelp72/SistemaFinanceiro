@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import {
   TextField,
   Button,
-  Link,
+
   InputAdornment,
   IconButton,
   Alert,
@@ -12,31 +12,36 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { Form, OptionsRow } from "./styles.ts";
+import { Form } from "./styles.ts";
 
 interface LoginFormData {
+  nome?: string;
   email: string;
   password: string;
 }
 
 interface LoginFormProps {
-  onSubmit: (data: LoginFormData) => void;
+  creating: boolean;
+  onSubmit: (data: LoginFormData) => Promise<void>;
   error: string;
 }
 
-function LoginForm({ onSubmit, error }: LoginFormProps) {
+function LoginForm({ onSubmit, error, creating }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormData>();
 
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       {error && <Alert severity="error">{error}</Alert>}
 
+      {creating && <TextField label="Nome" autoComplete="name" fullWidth error={!!errors.nome} helperText={errors.nome?.message} {...register("nome", { validate: v => !!v?.trim() || "Informe seu nome" })} />}
       <TextField
+        type="email"
+        autoComplete="email"
         label="E-mail"
         placeholder="seuemail@email.com"
         fullWidth
@@ -55,6 +60,7 @@ function LoginForm({ onSubmit, error }: LoginFormProps) {
       />
 
       <TextField
+        autoComplete={creating ? "new-password" : "current-password"}
         label="Senha"
         placeholder="sua senha"
         type={showPassword ? "text" : "password"}
@@ -72,6 +78,7 @@ function LoginForm({ onSubmit, error }: LoginFormProps) {
               <InputAdornment position="end">
                 <IconButton
                   onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   edge="end"
                 >
                   {showPassword ? (
@@ -84,17 +91,11 @@ function LoginForm({ onSubmit, error }: LoginFormProps) {
             ),
           },
         }}
-        {...register("password", { required: "Senha é obrigatória" })}
+        {...register("password", { required: "Senha é obrigatória", minLength: creating ? { value: 8, message: "Use pelo menos 8 caracteres" } : undefined })}
       />
 
-      <OptionsRow>
-        <Link href="#" variant="body2">
-          Esqueci minha senha
-        </Link>
-      </OptionsRow>
-
-      <Button type="submit" variant="contained" fullWidth size="large">
-        Entrar
+      <Button disabled={isSubmitting} type="submit" variant="contained" fullWidth size="large">
+        {isSubmitting ? "Aguarde…" : creating ? "Criar conta" : "Entrar"}
       </Button>
     </Form>
   );

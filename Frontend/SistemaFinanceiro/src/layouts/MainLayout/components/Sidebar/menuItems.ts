@@ -12,6 +12,7 @@ import { type SvgIconComponent } from "@mui/icons-material";
 export interface MenuItem {
   label: string;
   path: string;
+  pendente?: boolean;
   icon: SvgIconComponent;
 }
 

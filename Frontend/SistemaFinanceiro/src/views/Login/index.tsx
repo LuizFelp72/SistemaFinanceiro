@@ -1,39 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Typography } from "@mui/material";
-import { useAuth } from "../../auth/AuthContext";
+import { Button, Typography } from "@mui/material";
+import { useAuth } from "../../auth/session";
 import LoginForm from "./components/LoginForm";
 import LoginIllustration from "./components/LoginIllustration";
 import { Container, LeftPanel, FormWrapper } from "./styles";
 
-function Login() {
+export default function Login() {
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const [creating, setCreating] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const { signIn } = useAuth();
   const navigate = useNavigate();
-
-  function handleLogin(data: { email: string; password: string }) {
-    const success = login(data.email, data.password);
-
-    if (success) {
-      navigate("/");
-    } else {
-      setError("E-mail ou senha inválidos");
-    }
+  async function submit(data: { email: string; password: string; nome?: string }) {
+    setBusy(true);
+    setError("");
+    try {
+      await signIn(data.email, data.password, creating ? data.nome?.trim() : undefined);
+      navigate("/contas", { replace: true });
+    } catch (err) { setError(err instanceof Error ? err.message : "Falha ao entrar."); }
+    finally { setBusy(false); }
   }
-
-  return (
-    <Container>
-      <LeftPanel>
-        <FormWrapper>
-          <Typography variant="h4" gutterBottom>
-            Faça seu login
-          </Typography>
-          <LoginForm onSubmit={handleLogin} error={error} />
-        </FormWrapper>
-      </LeftPanel>
-      <LoginIllustration />
-    </Container>
-  );
+  return <Container><LeftPanel><FormWrapper>
+    <Typography component="h1" variant="h4" gutterBottom>{creating ? "Crie sua conta" : "Faça seu login"}</Typography>
+    <LoginForm key={String(creating)} creating={creating} onSubmit={submit} error={error} />
+    <Button disabled={busy} onClick={() => { setCreating(!creating); setError(""); }}>{creating ? "Voltar ao login" : "Criar cadastro"}</Button>
+  </FormWrapper></LeftPanel><LoginIllustration /></Container>;
 }
-
-export default Login;

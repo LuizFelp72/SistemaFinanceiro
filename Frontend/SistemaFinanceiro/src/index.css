@@ -1,0 +1,20 @@
+.skip-link { position: fixed; left: 1rem; top: 0.5rem; z-index: 1500; padding: .5rem 1rem; background: white; transform: translateY(-160%); }
+.skip-link:focus { transform: none; }
+:where(a, button, [tabindex="0"]):focus-visible, .MuiButtonBase-root.Mui-focusVisible { outline: 3px solid #4338ca; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@media print {
+  .MuiDrawer-root, .no-print, .skip-link { display: none !important; }
+  main#conteudo { margin: 0; padding: 0; background: white; }
+  .financial-report .MuiPaper-root { break-inside: avoid; box-shadow:none; }
+}
+
+::selection { background: #e0e7ff; color: #312e81; }
+input, textarea { caret-color: #6366f1; }
+.MuiDrawer-paper { scrollbar-width: thin; scrollbar-color: #475569 #0f172a; }
+@media (prefers-reduced-motion: no-preference) {
+  .MuiListItemButton-root { transition: background-color 160ms ease, color 160ms ease; }
+  .MuiDialogContent-root { scroll-behavior: smooth; }
+}

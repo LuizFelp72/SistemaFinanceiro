@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { List, ListItemIcon, ListItemText, Typography } from "@mui/material";
+import { List, ListItemIcon, ListItemText, Tooltip, Typography } from "@mui/material";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import { menuItems } from "./menuItems";
 import { StyledDrawer, LogoBox, NavItem, NavList } from "./styles";
@@ -20,20 +20,27 @@ function Sidebar() {
 
       <NavList>
         <List disablePadding>
-          {menuItems.map(({ label, path, icon: Icon }) => {
-            const isActive = location.pathname === path;
+          {menuItems.map(({ label, path, pendente, icon: Icon }) => {
+            const isActive = location.pathname === path
+              || (path === "/" && location.pathname === "/dashboard");
 
             return (
-              <NavItem
-                key={path}
-                active={isActive}
-                onClick={() => navigate(path)}
-              >
-                <ListItemIcon>
-                  <Icon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText primary={label} />
-              </NavItem>
+              <Tooltip key={path} title={pendente ? label + " · Em desenvolvimento" : label} placement="right" enterDelay={500}>
+                <span style={{ display: "block" }}>
+                <NavItem
+                  disabled={pendente}
+                  active={isActive}
+                  aria-label={label}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => navigate(path)}
+                >
+                  <ListItemIcon>
+                    <Icon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary={label} />
+                </NavItem>
+                </span>
+              </Tooltip>
             );
           })}
         </List>
