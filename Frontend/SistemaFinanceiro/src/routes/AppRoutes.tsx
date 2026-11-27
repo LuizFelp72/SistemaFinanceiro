@@ -4,6 +4,7 @@ import { CircularProgress, Box } from "@mui/material";
 import ProtectedRoute from "../auth/ProtectedRoute";
 
 const MainLayout = lazy(() => import("../layouts/MainLayout/index.tsx"));
+const Recovery = lazy(() => import("../views/Login/Recovery"));
 const Login = lazy(() => import("../views/Login"));
 const Dashboard = lazy(() => import("../views/Dashboard"));
 const Transacoes = lazy(() => import("../views/Transacoes"));
@@ -35,6 +36,7 @@ function AppRoutes() {
   return (
     <Suspense fallback={<Loading />}>
       <Routes>
+        <Route path="/recuperar-senha" element={<Recovery />} />
         <Route path="/login" element={<Login />} />
 
         <Route element={<ProtectedRoute />}>

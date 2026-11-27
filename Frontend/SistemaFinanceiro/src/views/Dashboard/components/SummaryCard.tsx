@@ -1,3 +1,4 @@
+import { dinheiro } from "../../Contas/accounts";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { Box, Typography } from "@mui/material";
 import { formatarMoeda } from "../../../utils/financeiro";
@@ -5,7 +6,7 @@ import { DashboardCard } from "../styles";
 
 interface SummaryCardProps {
   title: string;
-  value: number;
+  value: number | bigint;
   description: string;
   icon: SvgIconComponent;
   color: string;
@@ -30,7 +31,7 @@ export default function SummaryCard({
           {title}
         </Typography>
         <Typography sx={{ fontWeight: 700, fontSize: { xs: 23, lg: 21, xl: 24 }, letterSpacing: "-.5px", fontVariantNumeric: "tabular-nums" }}>
-          {formatarMoeda(value)}
+          {typeof value === "bigint" ? dinheiro(value,"BRL") : formatarMoeda(value)}
         </Typography>
         <Typography sx={{ color: "text.secondary", fontSize: 11, mt: 1 }}>
           {description}
