@@ -10,3 +10,11 @@
   main#conteudo { margin: 0; padding: 0; background: white; }
   .financial-report .MuiPaper-root { break-inside: avoid; box-shadow:none; }
 }
+
+::selection { background: #e0e7ff; color: #312e81; }
+input, textarea { caret-color: #6366f1; }
+.MuiDrawer-paper { scrollbar-width: thin; scrollbar-color: #475569 #0f172a; }
+@media (prefers-reduced-motion: no-preference) {
+  .MuiListItemButton-root { transition: background-color 160ms ease, color 160ms ease; }
+  .MuiDialogContent-root { scroll-behavior: smooth; }
+}

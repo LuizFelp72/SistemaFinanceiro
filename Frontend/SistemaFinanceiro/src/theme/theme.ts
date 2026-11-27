@@ -47,11 +47,39 @@ const theme = createTheme({
     borderRadius: 10,
   },
   components: {
+    MuiTooltip: {
+      defaultProps: { arrow: true, enterDelay: 350 },
+      styleOverrides: { tooltip: { borderRadius: 8, padding: "7px 10px", fontSize: 12 } },
+    },
+    MuiIconButton: {
+      styleOverrides: { root: {
+        transition: "background-color 160ms ease, color 160ms ease",
+        "&:focus-visible": { outline: "2px solid #6366f1", outlineOffset: 2 },
+      } },
+    },
+    MuiTableRow: {
+      styleOverrides: { root: { transition: "background-color 160ms ease" } },
+    },
+    MuiDialog: {
+      styleOverrides: { paper: { boxShadow: "0 16px 48px rgba(15,23,42,0.18)" } },
+    },
+    MuiLinearProgress: {
+      styleOverrides: { root: { borderRadius: 6 }, bar: { borderRadius: 6 } },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
           borderRadius: 10,
           padding: "10px 20px",
+          transition: "background-color 160ms ease, box-shadow 160ms ease, transform 120ms ease",
+          "&:active:not(.Mui-disabled)": { transform: "scale(0.98)" },
+          "@media (hover: hover)": {
+            "&:hover:not(.Mui-disabled)": { transform: "translateY(-1px)" },
+          },
+          "@media (prefers-reduced-motion: reduce)": {
+            transition: "none",
+            "&:active:not(.Mui-disabled), &:hover:not(.Mui-disabled)": { transform: "none" },
+          },
           boxShadow: "none",
         },
         contained: {
