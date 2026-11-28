@@ -1,0 +1,1 @@
+ALTER TABLE assets ADD COLUMN moeda CHAR(3) NOT NULL DEFAULT 'BRL' CHECK (moeda ~ '^[A-Z]{3}$');

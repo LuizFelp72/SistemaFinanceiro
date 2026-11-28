@@ -44,9 +44,11 @@ test("DTOs rejeitam alteração de proprietário, campos desconhecidos e PATCH v
     tipo: "Imóvel",
     valor_aquisicao: "350000.00",
     valor_atual: "420000.50",
+    moeda: "BRL",
     data_aquisicao: "2024-05-10",
     descricao: null,
   });
+  assert.throws(() => asset.parse({ moeda: "brl" }, true), { status: 400 });
   assert.deepEqual(category.parse({
     nome: "  Alimentação  ",
     tipo: "despesa",
