@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import { api } from "../../services/api";
 import { centavos, dinheiro } from "../Contas/accounts";
 import FinanceData from "../../components/FinanceData";
 import { Metrics, PageHeader } from "../../components/FinancePage";
+import { useToast } from "../../components/toast";
 import { type Ledger } from "../../services/finance";
 
 import { dataISO } from "../Dashboard/dashboard.utils";
@@ -12,6 +14,7 @@ export default function Orcamentos(){
   return <FinanceData resources="budgets accounts categories">{(db,reload)=><Budget db={db} reload={reload}/>}</FinanceData>;
 }
 function Budget({db,reload}:{db:Ledger;reload():void}){
+  const notify=useToast();
   const [month,setMonth]=useState(dataISO(new Date()).slice(0,7));
   const [currency,setCurrency]=useState("BRL");
   const [busy,setBusy]=useState(false);
@@ -28,6 +31,7 @@ function Budget({db,reload}:{db:Ledger;reload():void}){
     setBusy(true);setError("");
     try {
       await api("/budgets"+(method==="POST"?"":"/"+limit.id),{method,body:method==="DELETE"?undefined:JSON.stringify({mes:limit.month,categoria_id:limit.category,moeda:limit.currency,valor_limite:limit.amount})});
+      notify(method==="DELETE"?"Orçamento excluído com sucesso.":method==="PATCH"?"Orçamento atualizado com sucesso.":"Orçamento criado com sucesso.");
       setEditing(null);setDeleting(null);reload();
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
     finally{setBusy(false);}
@@ -38,11 +42,14 @@ function Budget({db,reload}:{db:Ledger;reload():void}){
     persist(limits.some(l=>l.id===editing.id)?"PATCH":"POST",{...editing,category:String(form.get("categoria")),amount:String(form.get("valor")).replace(",",".")});
   }
   return <Stack spacing={3}><PageHeader title="Orçamentos" subtitle="Controle seus gastos por categoria"><Button variant="contained" disabled={!month || !categories.length} onClick={()=>{setError("");setEditing({id:crypto.randomUUID(),month,category:"",amount:"",currency,spent:"0"});}}>Novo orçamento</Button></PageHeader>
+    {!categories.length && <Alert severity="info" action={<Button component={Link} to="/categorias" color="inherit" size="small">Criar categoria</Button>}>Para cadastrar um orçamento, crie primeiro pelo menos uma categoria do tipo Despesa.</Alert>}
     <Typography variant="body2" color="text.secondary">Os gastos consideram despesas concluídas na moeda selecionada.</Typography>
-    <TextField type="month" size="small" label="Mês" value={month} onChange={e=>setMonth(e.target.value)} slotProps={{inputLabel:{shrink:true}}} sx={{alignSelf:"start"}}/>
-    <TextField label="Moeda" select size="small" value={currency} onChange={e=>setCurrency(e.target.value)} sx={{alignSelf:"start"}}>{Array.from(new Set(["BRL",...db.accounts.map(a=>a.moeda),...limits.map(l=>l.currency)])).map(c=><MenuItem key={c} value={c}>{c}</MenuItem>)}</TextField>
+    <Stack direction="row" spacing={2}>
+      <TextField type="month" size="small" label="Mês" value={month} onChange={e=>setMonth(e.target.value)} slotProps={{inputLabel:{shrink:true}}} />
+      <TextField label="Moeda" select size="small" value={currency} onChange={e=>setCurrency(e.target.value)}>{Array.from(new Set(["BRL","USD","EUR",...db.accounts.map(a=>a.moeda),...limits.map(l=>l.currency)])).map(c=><MenuItem key={c} value={c}>{c}</MenuItem>)}</TextField>
+    </Stack>
     <Metrics items={[[ "Total orçado",dinheiro(planned,currency)],["Gasto nas categorias orçadas",dinheiro(spent,currency)],["Disponível",dinheiro(planned-spent,currency)],["No limite",shown.filter(l=>centavos(l.spent)>=centavos(l.amount)).length]]}/>
-    {!shown.length && <Paper sx={{p:3}}><Typography component="h2" variant="h6">Nenhum orçamento neste mês</Typography><Typography color="text.secondary">{categories.length?"Defina um limite para acompanhar uma categoria.":"Cadastre uma categoria de despesa para criar seu primeiro orçamento."}</Typography></Paper>}
+    {!shown.length && <Paper sx={{p:3}}><Typography component="h2" variant="h6">Nenhum orçamento neste mês</Typography><Typography color="text.secondary" sx={{mb:categories.length?0:2}}>{categories.length?"Defina um limite para acompanhar uma categoria.":"Cadastre uma categoria de despesa para criar seu primeiro orçamento."}</Typography>{!categories.length && <Button component={Link} to="/categorias" variant="outlined">Ir para Categorias</Button>}</Paper>}
     <Box sx={{display:"grid",gap:2,gridTemplateColumns:{xs:"1fr",md:"1fr 1fr"}}}>{shown.map(l=>{
       const used=centavos(l.spent), ratio=Number(used*10000n/centavos(l.amount))/10000;
       return <Paper key={l.id} sx={{p:2.5}}><Typography component="h2" variant="h6">{categories.find(c=>c.id===l.category)?.nome??"Categoria removida"}</Typography>

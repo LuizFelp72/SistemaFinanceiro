@@ -7,6 +7,7 @@ import { DashboardCard } from "../styles";
 interface SummaryCardProps {
   title: string;
   value: number | bigint;
+  currency?: string;
   description: string;
   icon: SvgIconComponent;
   color: string;
@@ -16,6 +17,7 @@ interface SummaryCardProps {
 export default function SummaryCard({
   title,
   value,
+  currency = "BRL",
   description,
   icon: Icon,
   color,
@@ -31,7 +33,7 @@ export default function SummaryCard({
           {title}
         </Typography>
         <Typography sx={{ fontWeight: 700, fontSize: { xs: 23, lg: 21, xl: 24 }, letterSpacing: "-.5px", fontVariantNumeric: "tabular-nums" }}>
-          {typeof value === "bigint" ? dinheiro(value,"BRL") : formatarMoeda(value)}
+          {typeof value === "bigint" ? dinheiro(value, currency) : formatarMoeda(value, currency)}
         </Typography>
         <Typography sx={{ color: "text.secondary", fontSize: 11, mt: 1 }}>
           {description}

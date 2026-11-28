@@ -23,8 +23,10 @@ import { CardHeading, DashboardCard } from "../styles";
 
 export default function RecentTransactions({
   transacoes,
+  currency = "BRL",
 }: {
   transacoes: Transacao[];
+  currency?: string;
 }) {
   const recentes = [...transacoes]
     .sort((a, b) => b.data.localeCompare(a.data))
@@ -124,7 +126,7 @@ export default function RecentTransactions({
                     </Box>
                   </TableCell>
                   <TableCell align="right" sx={{ color: receita ? "#21A366" : "#E5535E", fontWeight: 500 }}>
-                    {receita ? "" : "− "}{formatarMoeda(transacao.valor)}
+                    {receita ? "" : "− "}{formatarMoeda(transacao.valor, currency)}
                   </TableCell>
                   <TableCell sx={{ color: "text.secondary" }}>
                     {transacao.conta}

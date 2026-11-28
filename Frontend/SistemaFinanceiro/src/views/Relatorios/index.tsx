@@ -12,7 +12,7 @@ export default function Relatorios() { return <FinanceData resources="accounts c
 function Report({db}:{db:Ledger}) {
   const transactions=presentTransactions(db).filter(t=>t.status==="concluída" && t.tipo!=="transferencia");
   const years=Array.from(new Set([String(new Date().getFullYear()),...transactions.map(t=>t.data.slice(0,4))])).sort().reverse();
-  const currencies=Array.from(new Set(["BRL",...db.accounts.map(a=>a.moeda)]));
+  const currencies=Array.from(new Set(["BRL","USD","EUR",...db.accounts.map(a=>a.moeda)]));
   const [year,setYear]=useState(years[0]);
   const [currency,setCurrency]=useState("BRL");
   const filtered=transactions.filter(t=>t.moeda===currency && t.data.startsWith(year+"-"));

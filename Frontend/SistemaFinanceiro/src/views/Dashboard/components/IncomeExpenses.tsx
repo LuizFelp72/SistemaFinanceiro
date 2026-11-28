@@ -3,7 +3,7 @@ import { formatarMoeda } from "../../../utils/financeiro";
 import { CardHeading, DashboardCard, LegendRow } from "../styles";
 import Chart from "../../../components/Chart";
 
-export default function IncomeExpenses({ receitas, despesas }: { receitas: number; despesas: number }) {
+export default function IncomeExpenses({ receitas, despesas, currency = "BRL" }: { receitas: number; despesas: number; currency?: string }) {
   const total = receitas + despesas;
 
   return (
@@ -16,9 +16,9 @@ export default function IncomeExpenses({ receitas, despesas }: { receitas: numbe
           <Chart
             height={218}
             empty={total === 0}
-            label={`Receitas de ${formatarMoeda(receitas)} e despesas de ${formatarMoeda(despesas)}.`}
+            label={`Receitas de ${formatarMoeda(receitas, currency)} e despesas de ${formatarMoeda(despesas, currency)}.`}
             option={{
-              tooltip: { trigger: "item", renderMode: "richText", valueFormatter: (value) => formatarMoeda(Number(value)) },
+              tooltip: { trigger: "item", renderMode: "richText", valueFormatter: (value) => formatarMoeda(Number(value), currency) },
               series: [{
                 name: "Movimentações",
                 type: "pie",
@@ -36,7 +36,7 @@ export default function IncomeExpenses({ receitas, despesas }: { receitas: numbe
           {total > 0 && (
             <Box sx={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", pointerEvents: "none" }}>
               <Typography sx={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.3px" }}>
-                {formatarMoeda(receitas - despesas)}
+                {formatarMoeda(receitas - despesas, currency)}
               </Typography>
               <Typography sx={{ fontSize: 10, color: "text.secondary", mt: 0.5 }}>
                 Saldo no período
@@ -55,7 +55,7 @@ export default function IncomeExpenses({ receitas, despesas }: { receitas: numbe
                 {item.label}
               </LegendRow>
               <Typography sx={{ fontSize: 14, fontWeight: 600, mt: 0.75, ml: 1.9 }}>
-                {formatarMoeda(item.value)}
+                {formatarMoeda(item.value, currency)}
               </Typography>
               <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.25, ml: 1.9 }}>
                 {total ? (item.value / total * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "0"}% do total

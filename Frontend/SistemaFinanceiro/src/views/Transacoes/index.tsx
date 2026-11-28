@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Chip,
   Dialog, DialogTitle, DialogContent, DialogActions,
   IconButton,
   InputAdornment,
+  LinearProgress,
   MenuItem,
   Paper,
   Table,
@@ -26,7 +28,8 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import FinanceData from "../../components/FinanceData";
 import FinanceEditor, { type EditAction } from "../../components/FinanceEditor";
-import { type Ledger, presentTransactions, label } from "../../services/finance";
+import { api } from "../../services/api";
+import { type Ledger, type Row, presentTransactions, label } from "../../services/finance";
 import {
   CORES_CATEGORIA,
   capitalizar,
@@ -57,14 +60,19 @@ const estiloCelula = {
 };
 
 function Transacoes() {
-  return <FinanceData resources="transactions accounts categories payment-methods">{(db,reload) => <Lista db={db} reload={reload} />}</FinanceData>;
+  return <FinanceData resources="accounts categories payment-methods">{(db, reload) => <Lista db={db} reloadRefs={reload} />}</FinanceData>;
 }
-function Lista({db,reload}: {db:Ledger;reload():void}) {
-  const transacoes = useMemo(() => presentTransactions(db), [db]);
-  const [action,setAction] = useState<EditAction|null>(null);
 
-  const [detalhe, setDetalhe] = useState<(typeof transacoes)[number] | null>(null);
+function Lista({ db, reloadRefs }: { db: Ledger; reloadRefs(): void }) {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [total, setTotal] = useState(0);
+  const [fetchedKey, setFetchedKey] = useState("");
+  const [error, setError] = useState("");
+  const [version, setVersion] = useState(0);
+  const [action, setAction] = useState<EditAction | null>(null);
+
   const [busca, setBusca] = useState("");
+  const [buscaDebounced, setBuscaDebounced] = useState("");
   const [filtroConta, setFiltroConta] = useState("todas");
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [filtroCategoria, setFiltroCategoria] = useState("todas");
@@ -73,31 +81,56 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const categorias = useMemo(
-    () => Array.from(new Set(transacoes.map((t) => t.categoria))),
-    [transacoes]
-  );
-  const contas = useMemo(
-    () => Array.from(new Set(transacoes.map((t) => t.conta))),
-    [transacoes]
-  );
+  const datasInvalidas = !!de && !!ate && ate < de;
 
-  const filtradas = useMemo(() => {
-    return transacoes.filter((t) => {
-      const combinaBusca = t.descricao
-        .toLowerCase()
-        .includes(busca.toLowerCase());
-      const combinaConta = filtroConta === "todas" || t.conta === filtroConta;
-      const combinaTipo = filtroTipo === "todos" || t.tipo === filtroTipo;
-      const combinaCategoria =
-        filtroCategoria === "todas" || t.categoria === filtroCategoria;
-      return (!de || t.data >= de) && (!ate || t.data <= ate) && combinaBusca && combinaConta && combinaTipo && combinaCategoria;
+  useEffect(() => {
+    const id = window.setTimeout(() => setBuscaDebounced(busca.trim()), 250);
+    return () => window.clearTimeout(id);
+  }, [busca]);
+
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams({
+      page: String(page + 1),
+      limit: String(rowsPerPage),
     });
-  }, [transacoes, busca, filtroConta, filtroTipo, filtroCategoria, de, ate]);
+    if (buscaDebounced) params.set("busca", buscaDebounced);
+    if (filtroConta !== "todas") params.set("conta_id", filtroConta);
+    if (filtroTipo !== "todos") params.set("tipo", filtroTipo);
+    if (filtroCategoria !== "todas") params.set("categoria_id", filtroCategoria);
+    if (de) params.set("data_inicio", de);
+    if (ate) params.set("data_fim", ate);
+    return params.toString();
+  }, [page, rowsPerPage, buscaDebounced, filtroConta, filtroTipo, filtroCategoria, de, ate]);
 
-  const pagina = Math.min(page, Math.max(0, Math.ceil(filtradas.length / rowsPerPage) - 1));
-  const inicio = pagina * rowsPerPage;
-  const linhas = filtradas.slice(inicio, inicio + rowsPerPage);
+  const requestKey = `${queryString}#${version}`;
+  const loading = !datasInvalidas && fetchedKey !== requestKey;
+
+  useEffect(() => {
+    if (datasInvalidas) return;
+    const controller = new AbortController();
+    api<{ data: Record<string, unknown>[]; total: number }>(`/transactions?${queryString}`, { signal: controller.signal })
+      .then((batch) => {
+        if (controller.signal.aborted) return;
+        setRows(batch.data.map((row) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, String(v ?? "")]))));
+        setTotal(batch.total);
+        setError("");
+        setFetchedKey(requestKey);
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : "Falha ao carregar transações.");
+        setFetchedKey(requestKey);
+      });
+    return () => controller.abort();
+  }, [queryString, requestKey, datasInvalidas]);
+
+  const transacoes = useMemo(() => presentTransactions({ ...db, transactions: rows }), [db, rows]);
+  const [detalhe, setDetalhe] = useState<(typeof transacoes)[number] | null>(null);
+  const inicio = page * rowsPerPage;
+
+  function recarregar() {
+    setVersion((v) => v + 1);
+  }
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -122,7 +155,7 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
         </Box>
         <Button
           variant="contained"
-          onClick={() => setAction({mode:"create"})}
+          onClick={() => setAction({ mode: "create" })}
           startIcon={<AddIcon />}
           sx={{
             bgcolor: CORES.primaria,
@@ -176,9 +209,9 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
             sx={{ minWidth: 160 }}
           >
             <MenuItem value="todas">Todas as contas</MenuItem>
-            {contas.map((conta) => (
-              <MenuItem key={conta} value={conta}>
-                {conta}
+            {db.accounts.map((conta) => (
+              <MenuItem key={conta.id} value={conta.id}>
+                {conta.nome}
               </MenuItem>
             ))}
           </TextField>
@@ -212,9 +245,9 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
             sx={{ minWidth: 160 }}
           >
             <MenuItem value="todas">Todas categorias</MenuItem>
-            {categorias.map((categoria) => (
-              <MenuItem key={categoria} value={categoria}>
-                {categoria}
+            {db.categories.map((categoria) => (
+              <MenuItem key={categoria.id} value={categoria.id}>
+                {categoria.nome}
               </MenuItem>
             ))}
           </TextField>
@@ -223,12 +256,12 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
             onChange={e => { setDe(e.target.value); setPage(0); }}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: ate || undefined } }} />
           <TextField size="small" label="Até" type="date" value={ate}
-            error={!!de && !!ate && ate < de} helperText={de && ate && ate < de ? "O fim deve ser igual ou posterior ao início." : undefined}
+            error={datasInvalidas} helperText={datasInvalidas ? "O fim deve ser igual ou posterior ao início." : undefined}
             onChange={e => { setAte(e.target.value); setPage(0); }}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: de || undefined } }} />
           <Button
             disabled={!busca && !de && !ate && filtroConta === "todas" && filtroTipo === "todos" && filtroCategoria === "todas"}
-            onClick={() => { setBusca(""); setDe(""); setAte(""); setFiltroConta("todas"); setFiltroCategoria("todas"); setFiltroTipo("todos"); setPage(0); }}
+            onClick={() => { setBusca(""); setBuscaDebounced(""); setDe(""); setAte(""); setFiltroConta("todas"); setFiltroCategoria("todas"); setFiltroTipo("todos"); setPage(0); }}
             variant="outlined"
             aria-label="Limpar filtros"
             startIcon={<FilterListOutlinedIcon />}
@@ -241,6 +274,13 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
             Limpar filtros
           </Button>
         </Box>
+
+        {loading && <LinearProgress aria-label="Carregando transações" sx={{ mb: 1 }} />}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} action={<Button onClick={recarregar}>Tentar novamente</Button>}>
+            {error}
+          </Alert>
+        )}
 
         {/* Tabela */}
         <TableContainer>
@@ -262,7 +302,7 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {linhas.map((t) => {
+              {transacoes.map((t) => {
                 const corCategoria =
                   CORES_CATEGORIA[t.categoria] ?? CORES_CATEGORIA.Outros;
                 return (
@@ -306,7 +346,7 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
                         }}
                       >
                         {t.tipo === "despesa" ? "-" : ""}
-                        {formatarMoeda(t.valor,t.moeda)}
+                        {formatarMoeda(t.valor, t.moeda)}
                       </Typography>
                     </TableCell>
                     <TableCell sx={estiloCelula}>
@@ -332,10 +372,10 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
                       <IconButton size="small" aria-label={`Ver detalhes de ${t.descricao}`} onClick={() => setDetalhe(t)}>
                         <VisibilityOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" onClick={() => setAction({mode:"edit",row:db.transactions.find(r => r.id === t.id)})} aria-label={`Editar ${t.descricao}`}>
+                      <IconButton size="small" onClick={() => setAction({ mode: "edit", row: rows.find(r => r.id === t.id) })} aria-label={`Editar ${t.descricao}`}>
                         <EditOutlinedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" onClick={() => setAction({mode:"delete",row:db.transactions.find(r => r.id === t.id)})} aria-label={`Excluir ${t.descricao}`}>
+                      <IconButton size="small" onClick={() => setAction({ mode: "delete", row: rows.find(r => r.id === t.id) })} aria-label={`Excluir ${t.descricao}`}>
                         <DeleteOutlineOutlinedIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
@@ -343,7 +383,7 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
                 );
               })}
 
-              {linhas.length === 0 && (
+              {!loading && transacoes.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={8}
@@ -368,13 +408,13 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
           }}
         >
           <Typography sx={{ color: CORES.texto, fontSize: 13, pl: 1 }}>
-            Mostrando {filtradas.length === 0 ? 0 : inicio + 1} a{" "}
-            {inicio + linhas.length} de {filtradas.length} transações
+            Mostrando {total === 0 ? 0 : inicio + 1} a{" "}
+            {inicio + transacoes.length} de {total} transações
           </Typography>
           <TablePagination
             component="div"
-            count={filtradas.length}
-            page={pagina}
+            count={total}
+            page={page}
             onPageChange={(_, novaPage) => setPage(novaPage)}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={(evento) => {
@@ -389,10 +429,10 @@ function Lista({db,reload}: {db:Ledger;reload():void}) {
           />
         </Box>
       </Paper>
-      {action && <FinanceEditor resource="transactions" db={db} action={action} close={() => setAction(null)} saved={() => { setAction(null); reload(); }} />}
+      {action && <FinanceEditor resource="transactions" db={db} action={action} close={() => setAction(null)} saved={() => { setAction(null); recarregar(); reloadRefs(); }} />}
       <Dialog open={!!detalhe} onClose={() => setDetalhe(null)} aria-labelledby="transacao-detalhe">
         <DialogTitle id="transacao-detalhe">{detalhe?.descricao}</DialogTitle>
-        {detalhe && <DialogContent><Typography>{label(detalhe.tipo)} · {formatarMoeda(detalhe.valor,detalhe.moeda)}</Typography><Typography>{formatarData(detalhe.data)} · {detalhe.conta}{detalhe.destino && " → " + detalhe.destino}</Typography><Typography>{detalhe.categoria} · {capitalizar(detalhe.status)}</Typography></DialogContent>}
+        {detalhe && <DialogContent><Typography>{label(detalhe.tipo)} · {formatarMoeda(detalhe.valor, detalhe.moeda)}</Typography><Typography>{formatarData(detalhe.data)} · {detalhe.conta}{detalhe.destino && " → " + detalhe.destino}</Typography><Typography>{detalhe.categoria} · {capitalizar(detalhe.status)}</Typography></DialogContent>}
         <DialogActions><Button onClick={() => setDetalhe(null)}>Fechar</Button></DialogActions>
       </Dialog>
     </Box>

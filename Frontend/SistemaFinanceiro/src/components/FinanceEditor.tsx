@@ -3,8 +3,10 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuI
 import { api } from "../services/api";
 import { type Ledger, type Row } from "../services/finance";
 import { fields, singular, type Editable } from "./financeFields";
+import { useToast } from "./toast";
 export type EditAction = { mode: "create" | "edit" | "delete"; row?: Row };
 export default function FinanceEditor({ resource, db, action, close, saved }: { resource: Editable; db: Ledger; action: EditAction; close(): void; saved(): void }) {
+  const notify = useToast();
   const [values,setValues] = useState<Row>(() => ({ ...Object.fromEntries(fields(resource,db,{}).map(f => [f.key,f.initial ?? ""])), ...action.row }));
   const [error,setError] = useState("");
   const [busy,setBusy] = useState(false);
@@ -19,14 +21,17 @@ export default function FinanceEditor({ resource, db, action, close, saved }: { 
     const payload: Record<string, string | null | boolean> = {};
     for (const f of inputs) {
       const value = (values[f.key] ?? "").trim();
-      payload[f.key] = f.key === "ativo" ? value === "true" : f.kind === "money" ? value.replace(",",".") : value || null;
+      payload[f.key] = f.key === "ativo" ? value === "true" : f.key === "moeda" ? value.toUpperCase() : f.kind === "money" ? value.replace(",",".") : value || null;
     }
     if (resource === "transactions") payload[values.tipo === "transferencia" ? "categoria_id" : "conta_destino_id"] = null;
     setBusy(true); setError("");
     try {
       await api("/" + resource + (action.row ? "/" + action.row.id : ""), {
         method: removing ? "DELETE" : action.row ? "PATCH" : "POST", body: removing ? undefined : JSON.stringify(payload),
-      }); saved();
+      });
+      const labelName = singular[resource];
+      notify(removing ? `${labelName.charAt(0).toUpperCase() + labelName.slice(1)} excluído(a) com sucesso.` : action.row ? `${labelName.charAt(0).toUpperCase() + labelName.slice(1)} atualizado(a) com sucesso.` : `${labelName.charAt(0).toUpperCase() + labelName.slice(1)} cadastrado(a) com sucesso.`);
+      saved();
     } catch (err) { setError(err instanceof Error ? err.message : "Falha ao salvar."); setBusy(false); }
   }
   return <Dialog open fullWidth maxWidth="xs" onClose={busy ? undefined : close} aria-labelledby="resource-title"><form onSubmit={submit}>

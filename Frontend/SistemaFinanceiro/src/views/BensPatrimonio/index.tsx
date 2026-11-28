@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  IconButton, InputAdornment, Table, TableBody, TableCell, TableContainer,
+  IconButton, InputAdornment, MenuItem, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Tab, Tabs, TextField, Tooltip, Typography,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -36,11 +36,13 @@ export default function BensPatrimonio() {
 }
 function Patrimonio({db,reload}:{db:Ledger;reload():void}) {
   const [action,setAction] = useState<EditAction|null>(null);
-  const bens = useMemo(() => db.assets.map(a => {
+  const moedas = useMemo(() => Array.from(new Set(["BRL", "USD", "EUR", ...db.assets.map((a) => a.moeda || "BRL")])), [db]);
+  const [moeda, setMoeda] = useState("BRL");
+  const bens = useMemo(() => db.assets.filter((a) => (a.moeda || "BRL") === moeda).map(a => {
     const categorias: Record<string,CategoriaBem> = { "imóvel":"Imóveis", "imóveis":"Imóveis", "veículo":"Veículos", "veículos":"Veículos", "investimento":"Investimentos", "investimentos":"Investimentos" };
     return { id:a.id, nome:a.nome, categoria:categorias[a.tipo.toLocaleLowerCase("pt-BR")] ?? "Outros", valorAtual:Number(a.valor_atual), dataAquisicao:a.data_aquisicao,
       variacao:Number(a.valor_aquisicao) ? (Number(a.valor_atual)/Number(a.valor_aquisicao)-1)*100 : NaN };
-  }),[db]);
+  }),[db, moeda]);
   const [categoria, setCategoria] = useState<CategoriaBem | "todos">("todos");
   const [busca, setBusca] = useState("");
   const [detalhe, setDetalhe] = useState<Bem | null>(null);
@@ -55,11 +57,16 @@ function Patrimonio({db,reload}:{db:Ledger;reload():void}) {
       <Box component="header" sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2, mb: 0.5 }}>
         <Box>
           <Typography component="h1" variant="h5" sx={{ fontSize: 23, letterSpacing: "-.5px", mb: 0.5 }}>Bens / Patrimônio</Typography>
-          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Gerencie seus bens e ativos</Typography>
+          <Typography sx={{ fontSize: 13, color: "text.secondary" }}>Gerencie seus bens e ativos ({moeda})</Typography>
         </Box>
-        <Tooltip title="Cadastrar bem">
-          <span><Button onClick={() => setAction({mode:"create"})} variant="contained" startIcon={<AddRoundedIcon />} size="small">Novo bem</Button></span>
-        </Tooltip>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <TextField select size="small" label="Moeda" value={moeda} onChange={(e) => setMoeda(e.target.value)} sx={{ minWidth: 96, "& .MuiInputBase-root": { fontSize: 12, bgcolor: "#fff" } }}>
+            {moedas.map((m) => <MenuItem key={m} value={m} sx={{ fontSize: 13 }}>{m}</MenuItem>)}
+          </TextField>
+          <Tooltip title="Cadastrar bem">
+            <span><Button onClick={() => setAction({mode:"create"})} variant="contained" startIcon={<AddRoundedIcon />} size="small">Novo bem</Button></span>
+          </Tooltip>
+        </Box>
       </Box>
 
       <Summary>
@@ -70,7 +77,7 @@ function Patrimonio({db,reload}:{db:Ledger;reload():void}) {
         ].map((item) => (
           <Card key={item.title} sx={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <Typography component="h2" sx={{ color: "text.secondary", fontSize: 12, fontWeight: 500, mb: 1.5 }}>{item.title}</Typography>
-            <Typography sx={{ fontSize: { xs: 24, lg: 23 }, fontWeight: 700, letterSpacing: "-.5px", fontVariantNumeric: "tabular-nums" }}>{formatarMoeda(item.value)}</Typography>
+            <Typography sx={{ fontSize: { xs: 24, lg: 23 }, fontWeight: 700, letterSpacing: "-.5px", fontVariantNumeric: "tabular-nums" }}>{formatarMoeda(item.value, moeda)}</Typography>
             <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 1.25 }}>{item.description}</Typography>
           </Card>
         ))}
@@ -114,7 +121,7 @@ function Patrimonio({db,reload}:{db:Ledger;reload():void}) {
                 <TableRow key={bem.id} hover>
                   <TableCell sx={{ fontWeight: 500 }}>{bem.nome}</TableCell>
                   <TableCell sx={{ color: "text.secondary" }}>{bem.categoria}</TableCell>
-                  <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>{formatarMoeda(bem.valorAtual)}</TableCell>
+                  <TableCell align="right" sx={{ fontVariantNumeric: "tabular-nums" }}>{formatarMoeda(bem.valorAtual, moeda)}</TableCell>
                   <TableCell align="center"><Variacao valor={bem.variacao} /></TableCell>
                   <TableCell sx={{ color: "text.secondary" }}>{formatarData(bem.dataAquisicao)}</TableCell>
                   <TableCell align="right">
@@ -138,7 +145,7 @@ function Patrimonio({db,reload}:{db:Ledger;reload():void}) {
           {detalhe && <Box sx={{ display: "grid", gap: 2, pt: 1 }}>
             {[
               { label: "Categoria", value: detalhe.categoria },
-              { label: "Valor atual", value: formatarMoeda(detalhe.valorAtual) },
+              { label: "Valor atual", value: formatarMoeda(detalhe.valorAtual, moeda) },
               { label: "Data de aquisição", value: formatarData(detalhe.dataAquisicao) },
             ].map((item) => <Box key={item.label}><Typography variant="caption" color="text.secondary">{item.label}</Typography><Typography variant="body2" sx={{ fontWeight: 500, mt: 0.25 }}>{item.value}</Typography></Box>)}
             <Box><Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>Variação</Typography><Variacao valor={detalhe.variacao} /></Box>

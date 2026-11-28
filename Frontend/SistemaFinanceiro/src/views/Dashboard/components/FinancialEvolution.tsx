@@ -5,7 +5,7 @@ import { agruparEvolucao, dataLocal, type Agrupamento, type PontoEvolucao } from
 import { CardHeading, DashboardCard, LegendRow } from "../styles";
 import Chart from "../../../components/Chart";
 
-export default function FinancialEvolution({ pontos, empty }: { pontos: PontoEvolucao[]; empty: boolean }) {
+export default function FinancialEvolution({ pontos, empty, currency = "BRL" }: { pontos: PontoEvolucao[]; empty: boolean; currency?: string }) {
   const [agrupamento, setAgrupamento] = useState<Agrupamento>("diario");
   const dados = agruparEvolucao(pontos, agrupamento);
 
@@ -32,12 +32,12 @@ export default function FinancialEvolution({ pontos, empty }: { pontos: PontoEvo
       <Chart
         height={206}
         empty={empty}
-        label={`Evolução do saldo acumulado, agrupamento ${agrupamento}. Saldo final: ${formatarMoeda(pontos.at(-1)?.saldo ?? 0)}.`}
+        label={`Evolução do saldo acumulado, agrupamento ${agrupamento}. Saldo final: ${formatarMoeda(pontos.at(-1)?.saldo ?? 0, currency)}.`}
         option={{
           tooltip: {
             trigger: "axis",
             renderMode: "richText",
-            valueFormatter: (value) => formatarMoeda(Number(value)),
+            valueFormatter: (value) => formatarMoeda(Number(value), currency),
           },
           grid: { left: 10, right: 12, top: 14, bottom: 12, containLabel: true },
           xAxis: {
@@ -50,7 +50,7 @@ export default function FinancialEvolution({ pontos, empty }: { pontos: PontoEvo
           },
           yAxis: {
             type: "value",
-            axisLabel: { color: "#98A2B3", fontSize: 10, formatter: (value: number) => Math.abs(value) >= 1000 ? `R$ ${(value / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : `R$ ${value}` },
+            axisLabel: { color: "#98A2B3", fontSize: 10, formatter: (value: number) => Math.abs(value) >= 1000 ? `${currency} ${(value / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : `${currency} ${value}` },
             splitLine: { lineStyle: { color: "#F2F4F7", type: "dashed" } },
           },
           series: [{

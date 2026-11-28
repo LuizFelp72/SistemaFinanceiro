@@ -8,7 +8,7 @@ export interface CategoryTotal {
   value: number;
 }
 
-export default function CategoryDistribution({ categorias }: { categorias: CategoryTotal[] }) {
+export default function CategoryDistribution({ categorias, currency = "BRL" }: { categorias: CategoryTotal[]; currency?: string }) {
   const total = categorias.reduce((soma, categoria) => soma + categoria.value, 0);
   const dados = categorias.map((categoria) => ({
     ...categoria,
@@ -25,9 +25,9 @@ export default function CategoryDistribution({ categorias }: { categorias: Categ
         <Chart
           height={224}
           empty={total === 0}
-          label={`Despesas por categoria: ${categorias.map((item) => `${item.name}, ${formatarMoeda(item.value)}`).join("; ")}.`}
+          label={`Despesas por categoria: ${categorias.map((item) => `${item.name}, ${formatarMoeda(item.value, currency)}`).join("; ")}.`}
           option={{
-            tooltip: { trigger: "item", renderMode: "richText", valueFormatter: (value) => formatarMoeda(Number(value)) },
+            tooltip: { trigger: "item", renderMode: "richText", valueFormatter: (value) => formatarMoeda(Number(value), currency) },
             series: [{
               type: "pie",
               radius: ["56%", "80%"],

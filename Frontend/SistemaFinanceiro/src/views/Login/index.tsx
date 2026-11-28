@@ -17,7 +17,7 @@ export default function Login() {
     setError("");
     try {
       await signIn(data.email, data.password, creating ? data.nome?.trim() : undefined);
-      navigate("/contas", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) { setError(err instanceof Error ? err.message : "Falha ao entrar."); }
     finally { setBusy(false); }
   }

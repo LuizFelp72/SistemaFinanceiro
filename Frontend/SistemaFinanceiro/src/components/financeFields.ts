@@ -18,7 +18,7 @@ export function fields(resource: Editable, db: Ledger, values: Row): Field[] {
     case "categories": return [nome, choices("tipo", "Tipo", ["despesa","receita"]), text("cor","Cor (opcional)",true), text("icone","Ícone (opcional)",true)];
     case "payment-methods": return [nome, choices("tipo","Tipo",["pix","dinheiro","credito","debito","boleto","outro"]), { key:"ativo", title:"Situação", kind:"select", initial:"true", options:[["true","Ativo"],["false","Inativo"]] }];
     case "goals": return [nome, money("valor_objetivo","Valor da meta"), { ...money("valor_atual","Valor acumulado"), initial:"0" }, date("data_inicio","Data inicial"), date("data_limite","Prazo"), choices("status","Situação",["ativa","concluida","cancelada"])];
-    case "assets": return [nome, text("tipo","Tipo de bem"),money("valor_aquisicao","Valor de aquisição"),money("valor_atual","Valor atual"),date("data_aquisicao","Data de aquisição"),text("descricao","Descrição",true)];
+    case "assets": return [nome, text("tipo","Tipo de bem"),money("valor_aquisicao","Valor de aquisição"),money("valor_atual","Valor atual"),{ key:"moeda", title:"Moeda (ex.: BRL, USD)", initial:"BRL" },date("data_aquisicao","Data de aquisição"),text("descricao","Descrição",true)];
     case "transactions": {
       const tipo = values.tipo || "despesa";
       const accounts = db.accounts.filter(a => a.ativo === "true");

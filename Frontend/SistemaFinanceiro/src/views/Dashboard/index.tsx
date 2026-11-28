@@ -22,15 +22,21 @@ export default function Dashboard() {
   return <FinanceData resources="accounts transactions categories assets">{db => <Resumo db={db} />}</FinanceData>;
 }
 function Resumo({db}:{db:Ledger}) {
-  const transacoes = useMemo(() => presentTransactions(db).flatMap(t => t.moeda === "BRL" && t.tipo !== "transferencia" ? [{...t, tipo:t.tipo}] : []),[db]);
-  const inicial = db.accounts.filter(a => a.moeda === "BRL").reduce((n,a)=>n+centavos(a.saldo_inicial),0n);
-  const patrimonio = db.assets.reduce((n,a)=>n+centavos(a.valor_atual),0n);
+  const moedas = useMemo(
+    () => Array.from(new Set(["BRL", "USD", "EUR", ...db.accounts.map((a) => a.moeda), ...db.assets.map((a) => a.moeda || "BRL")])),
+    [db],
+  );
+  const [moeda, setMoeda] = useState("BRL");
+  const transacoes = useMemo(() => presentTransactions(db).flatMap(t => t.moeda === moeda && t.tipo !== "transferencia" ? [{...t, tipo:t.tipo}] : []),[db, moeda]);
+  const inicial = db.accounts.filter(a => a.moeda === moeda).reduce((n,a)=>n+centavos(a.saldo_inicial),0n);
+  const patrimonio = db.assets.filter(a => (a.moeda || "BRL") === moeda).reduce((n,a)=>n+centavos(a.valor_atual),0n);
   const meses = [...new Set(transacoes.map((transacao) => transacao.data.slice(0, 7)))].sort().reverse();
   const mesInicial = meses[0] ?? dataISO(new Date()).slice(0, 7);
   const [periodo, setPeriodo] = useState(mesInicial);
-  const limites = periodo === "todos"
+  const periodoAtual = periodo === "todos" || meses.includes(periodo) ? periodo : mesInicial;
+  const limites = periodoAtual === "todos"
     ? { inicio: limitesDoMes(meses.at(-1) ?? mesInicial).inicio, fim: limitesDoMes(mesInicial).fim }
-    : limitesDoMes(periodo);
+    : limitesDoMes(periodoAtual);
   const noPeriodo = transacoes.filter((transacao) => transacao.data >= limites.inicio && transacao.data <= limites.fim);
   const consideradas = transacoes.filter((transacao) => transacao.status === "concluída");
   const movimentos = consideradas.filter((transacao) => transacao.data >= limites.inicio && transacao.data <= limites.fim);
@@ -49,15 +55,29 @@ function Resumo({db}:{db:Ledger}) {
             Dashboard
           </Typography>
           <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
-            Visão geral das suas finanças em reais
+            Visão geral das suas finanças em {moeda}
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.5 }}>
           <TextField
             select
             size="small"
+            label="Moeda"
+            value={moeda}
+            onChange={(event) => setMoeda(event.target.value)}
+            sx={{ minWidth: 96, "& .MuiInputBase-root": { fontSize: 12, bgcolor: "#fff" } }}
+          >
+            {moedas.map((m) => (
+              <MenuItem key={m} value={m} sx={{ fontSize: 13 }}>
+                {m}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            size="small"
             label="Período"
-            value={periodo}
+            value={periodoAtual}
             onChange={(event) => setPeriodo(event.target.value)}
             sx={{ minWidth: 175, "& .MuiInputBase-root": { fontSize: 12, bgcolor: "#fff" } }}
           >
@@ -82,6 +102,7 @@ function Resumo({db}:{db:Ledger}) {
         <SummaryCard
           title="Saldo total"
           value={saldoTotal}
+          currency={moeda}
           description="Saldo inicial + movimentações concluídas"
           icon={AccountBalanceWalletOutlinedIcon}
           color="#7057F0"
@@ -90,6 +111,7 @@ function Resumo({db}:{db:Ledger}) {
         <SummaryCard
           title="Receitas"
           value={resumo.receitas}
+          currency={moeda}
           description={descricaoTotais}
           icon={ArrowCircleDownOutlinedIcon}
           color="#21A366"
@@ -98,6 +120,7 @@ function Resumo({db}:{db:Ledger}) {
         <SummaryCard
           title="Despesas"
           value={resumo.despesas}
+          currency={moeda}
           description={descricaoTotais}
           icon={DeleteOutlineOutlinedIcon}
           color="#E5535E"
@@ -106,6 +129,7 @@ function Resumo({db}:{db:Ledger}) {
         <SummaryCard
           title="Patrimônio líquido"
           value={saldoTotal + patrimonio}
+          currency={moeda}
           description="Saldo do período + valor atual dos bens"
           icon={CottageOutlinedIcon}
           color="#7057F0"
@@ -114,14 +138,14 @@ function Resumo({db}:{db:Ledger}) {
       </SummaryGrid>
 
       <ChartGrid>
-        <FinancialEvolution pontos={pontos} empty={movimentos.length === 0} />
-        <IncomeExpenses receitas={resumo.receitas} despesas={resumo.despesas} />
-        <Indicators receitas={resumo.receitas} despesas={resumo.despesas} dias={quantidadeDias(limites.inicio, limites.fim)} maiorDespesa={resumo.maiorDespesa} />
+        <FinancialEvolution pontos={pontos} empty={movimentos.length === 0} currency={moeda} />
+        <IncomeExpenses receitas={resumo.receitas} despesas={resumo.despesas} currency={moeda} />
+        <Indicators receitas={resumo.receitas} despesas={resumo.despesas} dias={quantidadeDias(limites.inicio, limites.fim)} maiorDespesa={resumo.maiorDespesa} currency={moeda} />
       </ChartGrid>
 
       <DetailGrid>
-        <RecentTransactions transacoes={noPeriodo} />
-        <CategoryDistribution categorias={resumo.categorias} />
+        <RecentTransactions transacoes={noPeriodo} currency={moeda} />
+        <CategoryDistribution categorias={resumo.categorias} currency={moeda} />
       </DetailGrid>
     </DashboardContainer>
   );

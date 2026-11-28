@@ -8,9 +8,10 @@ interface IndicatorsProps {
   despesas: number;
   dias: number;
   maiorDespesa?: Transacao;
+  currency?: string;
 }
 
-export default function Indicators({ receitas, despesas, dias, maiorDespesa }: IndicatorsProps) {
+export default function Indicators({ receitas, despesas, dias, maiorDespesa, currency = "BRL" }: IndicatorsProps) {
   const taxaPoupanca = receitas > 0 ? (receitas - despesas) / receitas * 100 : null;
   const indicadores = [
     {
@@ -19,9 +20,9 @@ export default function Indicators({ receitas, despesas, dias, maiorDespesa }: I
       detail: "das receitas do período",
       color: taxaPoupanca !== null && taxaPoupanca >= 0 ? "#21A366" : "text.primary",
     },
-    { label: "Gastos médios diários", value: formatarMoeda(despesas / dias), detail: `${dias} dias no período` },
-    { label: "Maior despesa", value: maiorDespesa ? formatarMoeda(maiorDespesa.valor) : "—", detail: maiorDespesa?.descricao ?? "Nenhuma despesa no período" },
-    { label: "Receita média diária", value: formatarMoeda(receitas / dias), detail: "no período selecionado" },
+    { label: "Gastos médios diários", value: formatarMoeda(despesas / dias, currency), detail: `${dias} dias no período` },
+    { label: "Maior despesa", value: maiorDespesa ? formatarMoeda(maiorDespesa.valor, currency) : "—", detail: maiorDespesa?.descricao ?? "Nenhuma despesa no período" },
+    { label: "Receita média diária", value: formatarMoeda(receitas / dias, currency), detail: "no período selecionado" },
   ];
 
   return (

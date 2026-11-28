@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Alert, Button, Stack, TextField } from "@mui/material";
-import { api, sessionKey } from "../../services/api";
+import { api, setStoredToken } from "../../services/api";
 import { useAuth, type User } from "../../auth/session";
 
 export default function ProfileForm({ password = false }: { password?: boolean }) {
@@ -19,7 +19,7 @@ export default function ProfileForm({ password = false }: { password?: boolean }
     try {
       if (password) {
         const result = await api<{token:string}>("/auth/password", {method:"POST",body:JSON.stringify({senha_atual:data.senha_atual,nova_senha:data.nova_senha})});
-        sessionStorage.setItem(sessionKey,result.token);
+        setStoredToken(result.token);
         form.reset();
       } else {
         const result = await api<User>("/auth/me",{method:"PATCH",body:JSON.stringify(data)});
